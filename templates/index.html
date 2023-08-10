@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="{{ url_for('static', filename='js_scripts.js') }}"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Title</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.3/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .spinner-overlay {
+            @apply fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 z-50 flex justify-center items-center;
+            display: none;
+        }
+
+        .spinner {
+            @apply flex justify-center items-center;
+        }
+
+        .spinner img {
+            width: 64px;
+            height: 64px;
+            animation: spin 1s linear infinite;
+        }
+
+        .spinner-text {
+            @apply text-white text-xl text-center mt-5;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+</head>
+<body class="bg-gray-100 p-10">
+    <div id="loading-spinner" class="spinner-overlay">
+      <div class="spinner">
+        <img src="static/images/NonprofitMegaphoneIcon.png" alt="Loading Spinner">
+      </div>
+    </div>
+    <div class="spinner-text">
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <p class="text-red-600">{{ messages[0] }}</p>
+          {% endif %}
+        {% endwith %}
+      </div>
+
+    <h1 class="text-4xl font-semibold mb-4">NPM Keyword Tool</h1>
+    <h2 class="text-2xl mb-3">Custom Keywords</h2>
+    <input type="text" id="input_keyword" class="border p-2 w-full mb-2" placeholder="Enter a concise keyword." required>
+    <button onclick="generateCustomKeywords()" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded">Generate Keywords</button>
+    <div class="mt-4">
+        <textarea id="custom-keywords" class="w-full p-2 border h-32" rows="4" cols="50"></textarea>
+        <button onclick="copyToClipboard('custom-keywords')" class="bg-green-500 hover:bg-green-600 text-white p-2 rounded mt-2">Copy</button>
+    </div>
+</body>
+</html>
