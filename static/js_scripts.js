@@ -34,3 +34,25 @@ function generateCustomKeywords() {
         alert("Please enter a keyword.");
     }
 }
+
+function copyToClipboard(textareaId) {
+    const textarea = document.getElementById(textareaId);
+    textarea.select();
+    document.execCommand('copy');
+    // Deselect the textarea after copying
+    textarea.blur();
+    window.getSelection().removeAllRanges();
+}
+
+function sendKeyword() {
+    var keyword = document.getElementById('input_keyword').value;
+    fetch('/custom_keywords?keyword=' + keyword)
+        .then(response => response.text())
+        .then(data => {
+            document.open();
+            document.write(data);
+            document.close();
+        })
+        .catch(error => console.error('Error:', error));
+}
+

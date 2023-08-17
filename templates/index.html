@@ -1,10 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-KJ2F564');</script>
+    <!-- End Google Tag Manager -->
     <script src="{{ url_for('static', filename='js_scripts.js') }}"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Title</title>
+    <title>NPM Keyword Tool</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.3/dist/tailwind.min.css" rel="stylesheet">
     <style>
         .spinner-overlay {
@@ -38,6 +45,10 @@
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
 <body class="bg-gray-100 p-10">
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KJ2F564"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
     <div id="loading-spinner" class="spinner-overlay">
       <div class="spinner">
         <img src="static/images/NonprofitMegaphoneIcon.png" alt="Loading Spinner">
@@ -54,9 +65,23 @@
     <h1 class="text-4xl font-semibold mb-4">NPM Keyword Tool</h1>
     <h2 class="text-2xl mb-3">Custom Keywords</h2>
     <input type="text" id="input_keyword" class="border p-2 w-full mb-2" placeholder="Enter a concise keyword." required>
-    <button onclick="generateCustomKeywords()" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded">Generate Keywords</button>
+    <button onclick="sendKeyword()" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded">Generate Keywords</button>
+    <div class="ml-4">
+            <table class="min-w-max w-full table-auto">
+                <tr>
+                    <th>Keyword</th>
+                    <th>Volume</th>
+                </tr>
+                {% for keyword in keywords %}
+                    <tr>
+                        <td>{{ keyword.name }}</td>
+                        <td>{{ keyword.volume }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+    </div>
     <div class="mt-4">
-        <textarea id="custom-keywords" class="w-full p-2 border h-32" rows="4" cols="50"></textarea>
+        <textarea id="keywords" name="keywords" rows="4" cols="50" readonly>{{ keyword_names|join('\n') }}</textarea>
         <button onclick="copyToClipboard('custom-keywords')" class="bg-green-500 hover:bg-green-600 text-white p-2 rounded mt-2">Copy</button>
     </div>
 </body>
