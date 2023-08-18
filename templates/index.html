@@ -81,8 +81,13 @@
             </table>
     </div>
     <div class="mt-4">
-        <textarea id="keywords" name="keywords" rows="4" cols="50" readonly>{{ keyword_names|join('\n') }}</textarea>
-        <button onclick="copyToClipboard('custom-keywords')" class="bg-green-500 hover:bg-green-600 text-white p-2 rounded mt-2">Copy</button>
+        <textarea id="keywords" name="keywords" rows="21" cols="50">{{ keyword_names|join('\n') }}</textarea>
+        <button onclick="copyToClipboard('keywords')" class="bg-green-500 hover:bg-green-600 text-white p-2 rounded mt-2">Copy</button>
     </div>
+    <div class="text-center">
+        <h2 class="text-2xl mt-8">Feedback</h2>
+        <a href="https://docs.google.com/document/d/1JvI2zDpBtk8tlIXWA3IC7VGTx-6nfKPjulqFU7Nb4aA/edit?usp=sharing" class="text-blue-500 hover:underline">Have feedback for Nick? Please put it on this form!</a>
+    </div>
+</body>
 </body>
 </html>

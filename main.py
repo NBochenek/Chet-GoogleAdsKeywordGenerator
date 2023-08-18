@@ -98,7 +98,16 @@ def custom_keywords():
         sorted_kw_objects = sorted(kw_objects, key=lambda x: x.volume if x.volume is not None else 0, reverse=True)
         keyword_names = [kw.name for kw in sorted_kw_objects]  #Allows the keywords to be easily rendered into the text box.
         if len(keyword_names) < 20:
-            keyword_names = cleaned_list # Workaround for API input limit bug. This can be removed later.
+            keyword_names = cleaned_list
+
+
+
+
+
+
+
+
+            8# Workaround for API input limit bug. This can be removed later.
 
 
         return render_template("index.html", keywords=sorted_kw_objects, keyword_names=keyword_names)
