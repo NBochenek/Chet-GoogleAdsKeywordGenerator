@@ -9,6 +9,7 @@ from spyFuAPI import get_keyword_data
 
 
 app = Flask(__name__)
+app.secret_key = "ghostfailurecurry"
 
 openai.api_key = open_ai_key
 
@@ -75,6 +76,16 @@ def kw_obj_constructor(string): #TODO Handle a scenario in which the SpyFu datab
     return kw_objs
 
 
+def add_to_history(keyword):
+    history = session.get("history", [])
+    history.append(keyword)
+    if len(history) > 5:
+        history.pop(0)
+        history.reverse()
+    session["history"] = history
+    return history
+
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     app.logger.info('Processing request for the root path')
@@ -85,6 +96,7 @@ def index():
 def custom_keywords():
     print("Button Clicked! Generating Keywords...")
     keyword = request.args.get('keyword', '')
+    history = add_to_history(keyword)
     if keyword:
         custom_keywords = generate_custom_keywords(keyword)
         cleaned_list = [keyword]
@@ -100,10 +112,15 @@ def custom_keywords():
         sorted_kw_objects = sorted(kw_objects, key=lambda x: x.volume if x.volume is not None else 0, reverse=True)
         keyword_names = [kw.name for kw in sorted_kw_objects]  #Allows the keywords to be easily rendered into the text box.
         if len(keyword_names) < 20:
+            no_data = []
+            for item in cleaned_list:
+                if item not in keyword_names:
+                    no_data.append(item)
             keyword_names = cleaned_list
+            flash(f"No keyword data found for some entries: \n{no_data}")
             # Workaround for API input limit bug. This can be removed later.
 
-        return render_template("index.html", keywords=sorted_kw_objects, keyword_names=keyword_names)
+        return render_template("index.html", keywords=sorted_kw_objects, keyword_names=keyword_names, history=history)
     else:
         return render_template("index.html", error="Please enter a keyword.")
 

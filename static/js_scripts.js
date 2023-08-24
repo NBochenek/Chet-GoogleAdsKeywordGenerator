@@ -44,9 +44,14 @@ function copyToClipboard(textareaId) {
     window.getSelection().removeAllRanges();
 }
 
-function sendKeyword() {
+function sendKeyword(keyword) {
     showLoadingSpinner();
-    var keyword = document.getElementById('input_keyword').value;
+
+    // If no keyword argument provided, get the value from the input field
+    if (!keyword) {
+        keyword = document.getElementById('input_keyword').value;
+    }
+
     fetch('/custom_keywords?keyword=' + keyword)
         .then(response => response.text())
         .then(data => {
@@ -56,6 +61,7 @@ function sendKeyword() {
         })
         .catch(error => console.error('Error:', error));
 }
+
 
 
 
