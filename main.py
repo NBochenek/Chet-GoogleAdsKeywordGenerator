@@ -58,7 +58,8 @@ def remove_numbers(text_list):
         return text_list
     return cleaned_list
 
-def kw_obj_constructor(string):
+
+def kw_obj_constructor(string): #TODO Handle a scenario in which the SpyFu database does not return a result.
     kw_objs = []
     count = 1
     kw_data = get_keyword_data(string) # There is a bug here that does not always get 21 results.
@@ -67,7 +68,8 @@ def kw_obj_constructor(string):
         print(result)
         keyword = result['keyword']
         search_volume = result['searchVolume']
-        kw = Keyword(count, keyword, search_volume)
+        clicks = result['totalMonthlyClicks']
+        kw = Keyword(count, keyword, search_volume, clicks)
         kw_objs.append(kw)
         count += 1
     return kw_objs
@@ -81,10 +83,10 @@ def index():
 
 @app.route('/custom_keywords', methods=['GET'])
 def custom_keywords():
+    print("Button Clicked! Generating Keywords...")
     keyword = request.args.get('keyword', '')
     if keyword:
         custom_keywords = generate_custom_keywords(keyword)
-        print(custom_keywords)
         cleaned_list = [keyword]
         for item in custom_keywords:
             try:
@@ -93,22 +95,13 @@ def custom_keywords():
             except IndexError:  # If split fails, keep the original item
                 cleaned_list.append(item)
         list_as_str = ", ".join(cleaned_list)  # Converts list to string for API query.
-        print(list_as_str)
+        print(len(list_as_str))
         kw_objects = kw_obj_constructor(list_as_str)
         sorted_kw_objects = sorted(kw_objects, key=lambda x: x.volume if x.volume is not None else 0, reverse=True)
         keyword_names = [kw.name for kw in sorted_kw_objects]  #Allows the keywords to be easily rendered into the text box.
         if len(keyword_names) < 20:
             keyword_names = cleaned_list
-
-
-
-
-
-
-
-
-            8# Workaround for API input limit bug. This can be removed later.
-
+            # Workaround for API input limit bug. This can be removed later.
 
         return render_template("index.html", keywords=sorted_kw_objects, keyword_names=keyword_names)
     else:

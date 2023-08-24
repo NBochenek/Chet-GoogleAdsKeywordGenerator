@@ -15,12 +15,22 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.3/dist/tailwind.min.css" rel="stylesheet">
     <style>
         .spinner-overlay {
-            @apply fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 z-50 flex justify-center items-center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 50;
             display: none;
+            justify-content: center;
+            align-items: center;
         }
 
         .spinner {
-            @apply flex justify-center items-center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .spinner img {
@@ -30,7 +40,10 @@
         }
 
         .spinner-text {
-            @apply text-white text-xl text-center mt-5;
+            color: white;
+            font-size: 1rem;
+            text-align: center;
+            margin-top: 5px;
         }
 
         @keyframes spin {
@@ -40,6 +53,20 @@
             100% {
                 transform: rotate(360deg);
             }
+        }
+        table tr:nth-of-type(even) {
+            background-color: #c8d8fa;
+        }
+        th.keyword {
+            width: 40%;
+        }
+
+        th.volume {
+            width: 30%;
+        }
+
+        th.clicks {
+            width: 30%;
         }
     </style>
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
@@ -62,32 +89,41 @@
         {% endwith %}
       </div>
 
-    <h1 class="text-4xl font-semibold mb-4">NPM Keyword Tool</h1>
+    <h1 class="text-4xl font-semibold mb-4">NPM Keyword Tool (Chet)</h1>
     <h2 class="text-2xl mb-3">Custom Keywords</h2>
-    <input type="text" id="input_keyword" class="border p-2 w-full mb-2" placeholder="Enter a concise keyword." required>
-    <button onclick="sendKeyword()" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded">Generate Keywords</button>
-    <div class="ml-4">
-            <table class="min-w-max w-full table-auto">
+    <div class="flex">
+        <div class="mr-4">
+            <input type="text" id="input_keyword" class="border p-2 w-full mb-2" placeholder="Enter a concise keyword." required onkeydown="if (event.keyCode == 13) sendKeyword();">
+            <button onclick="sendKeyword()" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded">Generate Keywords</button>
+        </div>
+        <div>
+            <textarea id="keywords" name="keywords" rows="21" cols="20">{{ keyword_names|join('\n') }}</textarea>
+            <div class="mt-2">
+                <button onclick="copyToClipboard('keywords')" class="bg-green-500 hover:bg-green-600 text-white p-2 rounded">Copy</button>
+            </div>
+        </div>
+        <div class="ml-4">
+            <table class="min-w-max w-full">
                 <tr>
-                    <th>Keyword</th>
-                    <th>Volume</th>
+                    <th class="keyword">Keyword</th>
+                    <th class="volume">Volume</th>
+                    <th class="clicks">Total Monthly Clicks</th>
                 </tr>
                 {% for keyword in keywords %}
                     <tr>
                         <td>{{ keyword.name }}</td>
-                        <td>{{ keyword.volume }}</td>
+                        <td class="text-center">{{ keyword.volume }}</td>
+                        <td class="text-center">{{ keyword.clicks }}</td>
                     </tr>
                 {% endfor %}
             </table>
+        </div>
     </div>
-    <div class="mt-4">
-        <textarea id="keywords" name="keywords" rows="21" cols="50">{{ keyword_names|join('\n') }}</textarea>
-        <button onclick="copyToClipboard('keywords')" class="bg-green-500 hover:bg-green-600 text-white p-2 rounded mt-2">Copy</button>
-    </div>
-    <div class="text-center">
-        <h2 class="text-2xl mt-8">Feedback</h2>
+    <div class="text-center mt-8">
+        <h2 class="text-2xl">Feedback</h2>
         <a href="https://docs.google.com/document/d/1JvI2zDpBtk8tlIXWA3IC7VGTx-6nfKPjulqFU7Nb4aA/edit?usp=sharing" class="text-blue-500 hover:underline">Have feedback for Nick? Please put it on this form!</a>
     </div>
 </body>
-</body>
 </html>
+
+

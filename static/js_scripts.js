@@ -45,6 +45,7 @@ function copyToClipboard(textareaId) {
 }
 
 function sendKeyword() {
+    showLoadingSpinner();
     var keyword = document.getElementById('input_keyword').value;
     fetch('/custom_keywords?keyword=' + keyword)
         .then(response => response.text())
