@@ -11,9 +11,222 @@
     <script src="{{ url_for('static', filename='js_scripts.js') }}"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NPM Keyword Tool</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.3/dist/tailwind.min.css" rel="stylesheet">
+    <title>NPM Ad Group Ideas Tool</title>
+<!--    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.3/dist/tailwind.min.css" rel="stylesheet"> -->
     <style>
+
+/* Defining variables is a great way to keep organized */
+        :root {
+          --blue-dark: #071EA9;
+          --blue-light: #73C2FF;
+          --blue-lighter: #B1DBFB;
+        }
+
+/* Set defaults at the topmost levels like html/body for consistency */
+        body {
+          padding: 2rem 6rem;
+          font-family: Times New Roman;
+          font-size: 16px;
+          /* From now on rem is used mostly so that the size of fonts/spacing can be changed proportionally just by changing this font-size */
+          /* This is what helps make websites responsive for mobole devices */
+          /* Now 1rem = 16px */
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+          margin: 0; /* browsers add absurdly large and inconsistent margins outside header elements by default, it's best to remove them */
+          padding: 0;
+        }
+
+/* Now headers can also be related to the base size */
+        h2 {
+          font-size: 1.5rem; /* 24px */
+        }
+
+        h3 {
+          font-size: 1.25rem; /* 20px */
+        }
+
+/* A universal button class is good to have, perfect for this page */
+        .btn {
+          background-color: var(--blue-dark);
+          color: white;
+          font-family: Times New Roman;
+          font-size: 1.25rem;
+          font-weight: bold;
+          padding: 0.5rem 2rem; /* with the base font size of 16px, this adds 8px padding over/under text, 32px left/right of text */
+        }
+
+/* flex is great for aligning content */
+        .header {
+          display: flex;
+          margin-bottom: 2rem;
+          justify-content: space-between;
+          /* because of flex inner elements will be equally as far from eachother, horizontally (justified), now */
+          /* two inner elements, logo and the div containing the navigation links will be far left / far right */
+        }
+
+        .logo {
+          align-self: start; /* because of flex the image can be easily aligned (vertically) to the top (start) or middle (center) */
+          width: 16rem; 
+          /* Generally, only width needs to be set on images, height will change automatically to maintain the aspect ratio */
+          /* Note that this is only for width, the same does not apply if you only set height */
+        }
+
+        .navigation {
+            /* Not necessary, but flex could be fun here to make the navigation a row instead */
+            /* display: flex; gap: 3rem; */
+        }
+
+        .nav-link {
+          align-items: center;
+          display: flex; /* Again, flex makes it easy to align items vertically with align-items: center */
+          padding: 0.25rem;
+            position: relative;
+        }
+
+        .forward-arrow {
+          /* CSS magic for creating simple shapes https://css-tricks.com/snippets/css/css-triangle/ */
+          border-top: 0.5rem solid transparent;
+          border-bottom: 0.5rem solid transparent;
+          border-left: 0.5rem solid var(--blue-dark);
+          display: inline-block; 
+          margin-right: 0.5rem;
+        }
+
+        .dropdown-content {
+            display: block;
+            position: absolute;
+            top: 100%;  /* This ensures it starts right after the parent's bottom */
+            left: 0;   /* Aligns it to the left of the parent */
+            background-color: #f9f9f9;
+            min-width: 150px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+/* Try to give sections meaningful class names based on their content for organizational purposes */
+/* gen for generator, just less writing */
+        .gen-container {
+            margin-bottom: 2rem;
+            width: fit-content; /* make the container div as small as it's largest inside element */
+/* now, we can force the input to be the same size as the keyword generator title */
+        }
+
+        .gen-title {
+            margin-bottom: 1rem;
+            white-space: nowrap; /* make sure the title is one line, container will be at most this size */
+        }
+
+        .gen-input {
+            border: 1px solid black;
+            box-sizing: border-box; /* Since padding is added, make sure the calculation of the element's size includes that rather than just the inner text, a minor detail */
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 1rem;
+            width: 100%; /* because .gen-container scaled down to the size of .gen-title, let's make the input the full width of the container */
+        }
+
+        .keyword-container {
+            /* keyword container named for both editable keyword sections and keyword metrics table */
+            /* flex is good for making elements fill available space, in this case full screen width */
+            display: flex;
+            width: 100%;
+            gap: 4rem; /* gap is used in conjunction with display: flex to define space between the elements inside */
+        }
+
+        .keyword-title {
+            /* both titles for editable keywords and the metrics table are the same, so use the same styling */
+            margin-bottom: 2rem;
+        }
+
+        .keyword-button {
+            /* both of copy buttons could have the same space between them and the content they're meant to copy */
+            /* just for consistency's sake */
+            margin-top: 1rem;
+        }
+
+        .editable-container {
+        }
+
+        .editable-container textarea {
+            border: 1px solid black;
+            line-height: 1.2rem; /* keep the lines of text in the keywords input a little spaced apart, vertically */
+            /* 1.2rem is generally good practice for readability */
+            padding: 0.5rem 1rem;
+        }
+
+        .metric-container {
+            /* the editable textarea is given a fixed width in the html with cols=30 */
+            /* because the outer .keyword-container uses flexbox, we can make the table take the remaining space */
+            width: 100%;
+        }
+
+        .metric-table {
+            border: 0 1px solid grey;
+            margin-top: -1.25rem; /* magic to make the top of the editable keyword textarea align with the top of the table rows */
+            /* instead of aligning with the top of the table headers */
+            width: 100%;
+        }
+
+        .metric-table td {
+            padding: 0.5rem;
+        }
+
+        .metric-table tr:nth-of-type(even) {
+            /* this was perfect already       (b^_^)b */
+            background-color: var(--blue-lighter);
+        }
+
+        th.th-keyword {
+/*            background-color: var(--blue-dark); */
+            text-align: left;
+            width: 40%;
+        }
+
+        th.th-volume {
+            width: 30%;
+        }
+
+        th.th-clicks {
+            width: 30%;
+        }
+
+        td.td-keyword {
+        }
+
+        td.td-volume {
+        }
+
+        td.td-clicks {
+        }
+
+        th.th-keyword, td.td-keyword {
+            padding-left: 2rem;
+        }
+
+        th.th-volume, td.td-volume {
+            text-align: center;
+        }
+
+        th.th-clicks, td.td-clicks {
+            text-align: center;
+        }
+
+        .metric-buttons {
+            text-align: right;
+        }
+
+        .spinner-overlay img {
+            width: 64px;
+            height: 64px;
+            animation: spin 1s linear infinite;
+        }
+
+        .spinner-text {
+            color: white;
+            font-size: 1rem;
+            text-align: center;
+            margin-top: 5px;
+        }
         .spinner-overlay {
             position: fixed;
             top: 0;
@@ -27,25 +240,6 @@
             align-items: center;
         }
 
-        .spinner {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .spinner img {
-            width: 64px;
-            height: 64px;
-            animation: spin 1s linear infinite;
-        }
-
-        .spinner-text {
-            color: white;
-            font-size: 1rem;
-            text-align: center;
-            margin-top: 5px;
-        }
-
         @keyframes spin {
             0% {
                 transform: rotate(0deg);
@@ -54,83 +248,84 @@
                 transform: rotate(360deg);
             }
         }
-        table tr:nth-of-type(even) {
-            background-color: #c8d8fa;
-        }
-        th.keyword {
-            width: 40%;
-        }
 
-        th.volume {
-            width: 30%;
-        }
-
-        th.clicks {
-            width: 30%;
-        }
-    </style>
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-</head>
-<body class="bg-gray-100 p-10">
+        </style>
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    </head>
+    <body>
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KJ2F564"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
     <div id="loading-spinner" class="spinner-overlay">
-      <div class="spinner">
         <img src="static/images/NonprofitMegaphoneIcon.png" alt="Loading Spinner">
       </div>
-    </div>
-    <div class="spinner-text">
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            <p class="text-red-600">{{ messages[0] }}</p>
-          {% endif %}
-        {% endwith %}
-      </div>
+        <div class="header">
+          <img class="logo" src="static/images/NonprofitMegaphoneHorizontal-alpha.png" alt="Horizontal Logo" />
 
-    <h1 class="text-4xl font-semibold mb-4">NPM Keyword Tool (Chet)</h1>
-    <h2 class="text-2xl mb-3">Custom Keywords</h2>
-    <div class="flex">
-        <div class="mr-4">
-            <input type="text" id="input_keyword" class="border p-2 w-full mb-2" placeholder="Enter a concise keyword." required onkeydown="if (event.keyCode == 13) sendKeyword();">
-            <button onclick="sendKeyword()" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded">Generate Keywords</button>
-        <p class="text-2xl mb-3">History</p>
-        <ol class="list-decimal list-inside">
-            {% for item in history %}
-                <li class="text-red-600">{{ item }}</li>
-<!--Runs Search as Link Click                <a href="javascript:void(0);" onclick="sendKeyword('{{ item }}')">{{ item }}</a>-->
-            {% endfor %}
-        </ol>
+            <!-- Display Flashed Messages -->
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                <p class="text-red-600">{{ messages[0] }}</p>
+              {% endif %}
+            {% endwith %}
+
+          <div class="navigation">
+            <div class="nav-link">
+              <div class="forward-arrow"></div>
+              <h2>Instructions</h2>
+            </div>
+            <div class="nav-link">
+              <div class="forward-arrow"></div>
+              <h2><a href="https://docs.google.com/document/d/1JvI2zDpBtk8tlIXWA3IC7VGTx-6nfKPjulqFU7Nb4aA/edit?usp=sharing" target="_blank"> Feedback </a></h2>
+
+            </div>
+            <div class="nav-link">
+                <div class="forward-arrow"></div>
+                <h2 onclick="toggleDropdown()">History</h2>
+                <ol class="dropdown-content list-decimal list-inside">
+                    {% for item in history %}
+                        <li class="text-blue-600">{{ item }}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+          </div>
         </div>
-        <div>
-            <textarea id="keywords" name="keywords" rows="21" cols="30">{{ keyword_names|join('\n') }}</textarea>
-            <div class="mt-2">
-                <button onclick="copyToClipboard('keywords')" class="bg-green-500 hover:bg-green-600 text-white p-2 rounded">Copy</button>
+<!--        <h1 class="text-4xl font-semibold mb-4">NPM Ad Group Ideas Tool (Chet)</h1>-->
+        <div class="gen-container">
+            <h2 class="gen-title">Enter A Concise Keyword To Generate Ad Groups</h2>
+            <input class="gen-input" type="text" id="input_keyword" placeholder="Enter a concise keyword." required onkeydown="if (event.keyCode == 13) sendKeyword();">
+            <button class="btn gen-button" onclick="sendKeyword()">Generate</button>
+        </div>
+        <!-- Described in the CSS above too. The keywords textarea and table are related and together take up with width of the page, so let's put them in a containing div together -->
+        <div class="keyword-container">
+            <div class="editable-container">
+                <h3 class="keyword-title">Editable Key Words</h3>
+                <textarea id="keywords" name="keywords" rows="21" cols="30">{{ keyword_names|join('\n') }}</textarea>
+                <button class="btn keyword-button" onclick="copyToClipboard('keywords')">Copy</button>
+            </div>
+            <div class="metric-container">
+                <h3 class="keyword-title">Keyword by Volume and Total Monthly Clicks</h3>
+                <table class="metric-table" cellspacing=0>
+                    <tr>
+                        <th class="th-keyword">Keyword</th>
+                        <th class="th-volume">Volume</th>
+                        <th class="th-clicks">Total Monthly Clicks</th>
+                    </tr>
+                    {% for keyword in keywords %}
+                        <tr>
+                            <td>{{ keyword.name }}</td>
+                            <td class="text-center">{{ keyword.volume }}</td>
+                            <td class="text-center">{{ keyword.clicks }}</td>
+                        </tr>
+                    {% endfor %}
+                </table>
+                <div class="metric-buttons">
+                    <button class="btn keyword-button" onclick="copyToClipboard('metrics')">Copy</button>
+                </div>
             </div>
         </div>
-        <div class="ml-4">
-            <table class="min-w-max w-full">
-                <tr>
-                    <th class="keyword">Keyword</th>
-                    <th class="volume">Volume</th>
-                    <th class="clicks">Total Monthly Clicks</th>
-                </tr>
-                {% for keyword in keywords %}
-                    <tr>
-                        <td>{{ keyword.name }}</td>
-                        <td class="text-center">{{ keyword.volume }}</td>
-                        <td class="text-center">{{ keyword.clicks }}</td>
-                    </tr>
-                {% endfor %}
-            </table>
-        </div>
-    </div>
-    <div class="text-center mt-8">
-        <h2 class="text-2xl">Feedback</h2>
-        <a href="https://docs.google.com/document/d/1JvI2zDpBtk8tlIXWA3IC7VGTx-6nfKPjulqFU7Nb4aA/edit?usp=sharing" class="text-blue-500 hover:underline">Have feedback for Nick? Please put it on this form!</a>
-    </div>
-</body>
+    </body>
 </html>
 
 
