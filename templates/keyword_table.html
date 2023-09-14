@@ -1,0 +1,32 @@
+<title>{{ original_kw }}</title>
+{% extends "index.html" %}
+
+{% block content %}
+    <!-- Content specific to this page goes here -->
+    <div class="keyword-container">
+            <div class="editable-container">
+                <h3 class="keyword-title">Editable Key Words</h3>
+                <textarea id="keywords" name="keywords" rows="21" cols="30">{{ keyword_names|join('\n') }}</textarea>
+                <button class="btn keyword-button" onclick="copyToClipboard('keywords')">Copy</button>
+            </div>
+    <div class="metric-container">
+        <h3 class="keyword-title">Keyword by Volume and Total Monthly Clicks</h3>
+        <table class="metric-table" cellspacing=0>
+            <tr>
+                <th class="th-keyword">Keyword</th>
+                <th class="th-volume">Estimated Monthly Volume</th>
+                <th class="th-clicks">Estimated Monthly Clicks</th>
+            </tr>
+            {% for keyword in keywords %}
+                <tr>
+                    <td onclick="sendKeywordToNewTab('{{ keyword.name }}')" target="_blank">{{ keyword.name }}</td>
+                    <td class="text-center">{{ keyword.volume }}</td>
+                    <td class="text-center">{{ keyword.clicks }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+        <div class="metric-buttons">
+            <button class="btn keyword-button" onclick="copyToClipboard('metrics')">Copy</button>
+        </div>
+    </div>
+{% endblock %}

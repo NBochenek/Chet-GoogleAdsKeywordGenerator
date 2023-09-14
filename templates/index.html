@@ -50,7 +50,7 @@
         .btn {
           background-color: var(--blue-dark);
           color: white;
-          font-family: Times New Roman;
+          font-family: poppins;
           font-size: 1.25rem;
           font-weight: bold;
           padding: 0.5rem 2rem; /* with the base font size of 16px, this adds 8px padding over/under text, 32px left/right of text */
@@ -191,6 +191,9 @@
         }
 
         td.td-keyword {
+            cursor: pointer;
+            color: var(--blue-dark);
+            text-decoration: underline;
         }
 
         td.td-volume {
@@ -248,11 +251,29 @@
                 transform: rotate(360deg);
             }
         }
+        .flash-message {
+            position: fixed;
+            bottom: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background-color: #4CAF50; /* green background */
+            color: white;
+            border-radius: 5px;
+            z-index: 1000; /* make sure it's on top */
+            opacity: 0; /* start as invisible */
+            transition: opacity 0.3s;
+        }
+
+        .flash-message.show {
+            opacity: 1;
+        }
 
         </style>
         <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     </head>
     <body>
+    {% block content %}
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KJ2F564"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
@@ -261,15 +282,7 @@
         <img src="static/images/NonprofitMegaphoneIcon.png" alt="Loading Spinner">
       </div>
         <div class="header">
-          <img class="logo" src="static/images/NonprofitMegaphoneHorizontal-alpha.png" alt="Horizontal Logo" />
-
-            <!-- Display Flashed Messages -->
-            {% with messages = get_flashed_messages() %}
-              {% if messages %}
-                <p class="text-red-600">{{ messages[0] }}</p>
-              {% endif %}
-            {% endwith %}
-
+          <img class="logo" src="static/images/NPM Logo Horizontal.png" alt="Horizontal Logo" />
           <div class="navigation">
             <div class="nav-link">
               <div class="forward-arrow"></div>
@@ -291,14 +304,22 @@
             </div>
           </div>
         </div>
-<!--        <h1 class="text-4xl font-semibold mb-4">NPM Ad Group Ideas Tool (Chet)</h1>-->
+        <div class="flashed_messages_containter">
+            <!-- Display Flashed Messages -->
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                <p class="text-red-600">{{ messages[0] }}</p>
+              {% endif %}
+            {% endwith %}
+        </div>
         <div class="gen-container">
-            <h2 class="gen-title">Enter A Concise Keyword To Generate Ad Groups</h2>
+            <h2 class="gen-title">Enter A Concise Keyword To Generate Keyword Ideas and Ad Groups</h2>
             <input class="gen-input" type="text" id="input_keyword" placeholder="Enter a concise keyword." required onkeydown="if (event.keyCode == 13) sendKeyword();">
             <button class="btn gen-button" onclick="sendKeyword()">Generate</button>
         </div>
         <!-- Described in the CSS above too. The keywords textarea and table are related and together take up with width of the page, so let's put them in a containing div together -->
-        <div class="keyword-container">
+    {% if keywords|length > 0 %}
+    <div class="keyword-container">
             <div class="editable-container">
                 <h3 class="keyword-title">Editable Key Words</h3>
                 <textarea id="keywords" name="keywords" rows="21" cols="30">{{ keyword_names|join('\n') }}</textarea>
@@ -309,14 +330,14 @@
                 <table class="metric-table" cellspacing=0>
                     <tr>
                         <th class="th-keyword">Keyword</th>
-                        <th class="th-volume">Volume</th>
-                        <th class="th-clicks">Total Monthly Clicks</th>
+                        <th class="th-volume">Estimated Monthly Volume</th>
+                        <th class="th-clicks">Estimated Monthly Clicks</th>
                     </tr>
                     {% for keyword in keywords %}
                         <tr>
-                            <td>{{ keyword.name }}</td>
-                            <td class="text-center">{{ keyword.volume }}</td>
-                            <td class="text-center">{{ keyword.clicks }}</td>
+                            <td class=td-keyword title="Click to generate keyword list based on this item." onclick="sendKeywordToNewTab('{{ keyword.name }}')" target="_blank">{{ keyword.name }}</td>
+                            <td class="text-left">{{ keyword.volume }}</td>
+                            <td class="text-left">{{ keyword.clicks }}</td>
                         </tr>
                     {% endfor %}
                 </table>
@@ -325,6 +346,8 @@
                 </div>
             </div>
         </div>
+    {% endif %}
+        {% endblock %}
     </body>
 </html>
 

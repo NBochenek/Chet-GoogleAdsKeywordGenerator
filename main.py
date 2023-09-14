@@ -13,13 +13,46 @@ app.secret_key = "ghostfailurecurry"
 
 openai.api_key = open_ai_key
 
-def generate_custom_keywords(keyword):
+
+def generate_broad_ad_group_ideas(keyword):
     try:
         keywords_input = keyword
         messages = [
             {"role": "system", "content": "You are a helpful assistant that generates Google Ads keywords."},
             {"role": "user", "content": f"Based on this keyword, generate 20 unique Google Ads keywords:\n\n{keywords_input}" 
                                         "Insert a line break after every keyword and return as a numbered list."}
+        ]
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            max_tokens=500,
+            n=1,
+            stop=None,
+            temperature=0.8,
+        )
+
+        keywords = response["choices"][0]["message"]["content"].lower().lstrip().strip().split("\n")[:20]
+
+        return keywords  # Return the list of keywords instead of the formatted
+
+    except openai.error.APIError as e:
+        print(e)
+    except openai.error.ServiceUnavailableError as e:
+        print(e)
+        time.sleep(5)
+
+
+def generate_tight_keyword_list(keyword):
+    try:
+        keywords_input = keyword
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant that generates Google Ads keywords."},
+            {"role": "user", "content": f"Here is an input keyword: {keywords_input}."
+                                        f"Use this keyword to generate 20 new keywords based on the following principles:"
+                                        f" First, put the words in a different order as long as it doesn't change the meaning too much."
+                                        "Second, use all fluent grammatical forms of essential words (e.g., compliance, comply, complying, complied)"
+                                        "Third, include query phrases (e.g., what is/are, how to, where is/are, why."
+                                        "When you have a list of 20 keywords, insert a line break after every keyword and return as a numbered list."}
         ]
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -64,9 +97,9 @@ def kw_obj_constructor(string): #TODO Handle a scenario in which the SpyFu datab
     kw_objs = []
     count = 1
     kw_data = get_keyword_data(string) # There is a bug here that does not always get 21 results.
-    print(kw_data)
+    # print(kw_data)
     for result in kw_data["results"]:
-        print(result)
+        # print(result)
         keyword = result['keyword']
         search_volume = result['searchVolume']
         clicks = result['totalMonthlyClicks']
@@ -98,7 +131,7 @@ def custom_keywords():
     keyword = request.args.get('keyword', '')
     history = add_to_history(keyword)
     if keyword:
-        custom_keywords = generate_custom_keywords(keyword)
+        custom_keywords = generate_broad_ad_group_ideas(keyword)
         cleaned_list = [keyword]
         for item in custom_keywords:
             try:
@@ -107,7 +140,7 @@ def custom_keywords():
             except IndexError:  # If split fails, keep the original item
                 cleaned_list.append(item)
         list_as_str = ", ".join(cleaned_list)  # Converts list to string for API query.
-        print(len(list_as_str))
+        # print(len(list_as_str))
         kw_objects = kw_obj_constructor(list_as_str)
         sorted_kw_objects = sorted(kw_objects, key=lambda x: x.volume if x.volume is not None else 0, reverse=True)
         keyword_names = [kw.name for kw in sorted_kw_objects]  #Allows the keywords to be easily rendered into the text box.
@@ -125,8 +158,42 @@ def custom_keywords():
         return render_template("index.html", error="Please enter a keyword.")
 
 
+@app.route('/targeted_keywords', methods=['GET'])
+def generate_targeted_keywords():
+    og_keyword = request.args.get('keyword', '')
+    print(og_keyword)
+
+    if og_keyword:
+        tight_kw = generate_tight_keyword_list(og_keyword)
+        cleaned_list = [og_keyword]
+        history = session["history"]
+        for item in tight_kw:
+            try:
+                cleaned_item = item.split(" ", 1)[1]  # Split at the first space
+                cleaned_list.append(cleaned_item)
+            except IndexError:  # If split fails, keep the original item
+                cleaned_list.append(item)
+        list_as_str = ", ".join(cleaned_list)  # Converts list to string for API query.
+        # print(len(list_as_str))
+        kw_objects = kw_obj_constructor(list_as_str)
+        sorted_kw_objects = sorted(kw_objects, key=lambda x: x.volume if x.volume is not None else 0, reverse=True)
+        keyword_names = [kw.name for kw in sorted_kw_objects]  #Allows the keywords to be easily rendered into the text box.
+        if len(keyword_names) < 20:
+            no_data = []
+            for item in cleaned_list:
+                if item not in keyword_names:
+                    no_data.append(item)
+            keyword_names = cleaned_list
+            flash(f"No keyword data found for some entries: \n{no_data}")
+        return render_template("keyword_table.html", keywords=sorted_kw_objects, keyword_names=keyword_names, history=history, original_kw=og_keyword)
+    else:
+        flash("Error loading keyword")
+        return redirect(url_for('index'))
+
+
 if __name__ == '__main__':
     app.run(debug=True)
+    # print(generate_tight_keyword_list("affirmative action"))
 
 
 

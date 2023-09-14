@@ -42,7 +42,29 @@ function copyToClipboard(textareaId) {
     // Deselect the textarea after copying
     textarea.blur();
     window.getSelection().removeAllRanges();
+
+    // Flash message logic
+    let flashMessage = document.createElement("div");
+    flashMessage.className = "flash-message";
+    flashMessage.innerText = "Text copied to clipboard!";
+
+    document.body.appendChild(flashMessage);
+
+    // Show the message
+    setTimeout(() => {
+        flashMessage.classList.add("show");
+    }, 10);  // Delay a bit to ensure the CSS transition works
+
+    // Hide the message after 3 seconds
+    setTimeout(() => {
+        flashMessage.classList.remove("show");
+        // Remove the message from the DOM after hiding it
+        setTimeout(() => {
+            flashMessage.remove();
+        }, 300);  // This should match the duration of the CSS transition
+    }, 3000);
 }
+
 
 function sendKeyword(keyword) {
     showLoadingSpinner();
@@ -71,6 +93,19 @@ function toggleDropdown() {
     }
 }
 
+function sendKeywordToNewTab(keyword) {
+    showLoadingSpinner();
+    fetch('/targeted_keywords?keyword=' + keyword)
+        .then(response => response.text())
+        .then(data => {
+            let newWindow = window.open('', '_blank');
+            newWindow.document.open();
+            newWindow.document.write(data);
+            newWindow.document.close();
+            hideLoadingSpinner();
+        })
+        .catch(error => console.error('Error:', error));
+}
 
 
 
