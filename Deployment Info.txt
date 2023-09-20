@@ -1,3 +1,7 @@
+gcloud config get-value project
+
+gcloud config set project npm-ad-keyword-tool
+
 When deploying STABLE version, use the following command:
 
 gcloud app deploy --project npm-ad-keyword-tool --version stable

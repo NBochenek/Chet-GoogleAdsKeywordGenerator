@@ -55,7 +55,7 @@ def generate_tight_keyword_list(keyword):
                                         "When you have a list of 20 keywords, insert a line break after every keyword and return as a numbered list."}
         ]
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",
             messages=messages,
             max_tokens=500,
             n=1,
@@ -76,8 +76,8 @@ def generate_tight_keyword_list(keyword):
 
 def remove_numbers(text_list):
     try:
-        cleaned_list = [re.sub(r'\d', '', text, count=2) for text in text_list]
-        cleaned_list = [text.lstrip('.') for text in cleaned_list]
+        # cleaned_list = [re.sub(r'\d', '', text, count=2) for text in text_list]
+        cleaned_list = [text.lstrip('.') for text in text_list]
         cleaned_list = [text.strip() for text in cleaned_list]
         cleaned_list = [text.replace("'", "") for text in cleaned_list]
         cleaned_list = [text.replace('"', "") for text in cleaned_list]
@@ -114,8 +114,8 @@ def add_to_history(keyword):
     history.append(keyword)
     if len(history) > 5:
         history.pop(0)
-        history.reverse()
     session["history"] = history
+    # history.reverse()
     return history
 
 
@@ -131,7 +131,7 @@ def custom_keywords():
     keyword = request.args.get('keyword', '')
     history = add_to_history(keyword)
     if keyword:
-        custom_keywords = generate_broad_ad_group_ideas(keyword)
+        custom_keywords = remove_numbers(generate_broad_ad_group_ideas(keyword))
         cleaned_list = [keyword]
         for item in custom_keywords:
             try:
@@ -151,7 +151,7 @@ def custom_keywords():
                     no_data.append(item)
             keyword_names = cleaned_list
             flash(f"No keyword data found for some entries: \n{no_data}")
-            # Workaround for API input limit bug. This can be removed later.
+            no_data.clear()
 
         return render_template("index.html", keywords=sorted_kw_objects, keyword_names=keyword_names, history=history)
     else:

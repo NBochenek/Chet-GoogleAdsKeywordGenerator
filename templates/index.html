@@ -11,7 +11,7 @@
     <script src="{{ url_for('static', filename='js_scripts.js') }}"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NPM Ad Group Ideas Tool</title>
+    <title>Ad Group Ideas Tool (Chet)</title>
 <!--    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.3/dist/tailwind.min.css" rel="stylesheet"> -->
     <style>
 
@@ -89,8 +89,17 @@
           border-top: 0.5rem solid transparent;
           border-bottom: 0.5rem solid transparent;
           border-left: 0.5rem solid var(--blue-dark);
-          display: inline-block; 
+          display: inline-block;
           margin-right: 0.5rem;
+        }
+
+        .down-arrow {
+          width: 0;
+          height: 0;
+          border-left: 20px solid transparent;
+          border-right: 20px solid transparent;
+
+          border-top: 20px solid #f00;
         }
 
         .dropdown-content {
@@ -286,7 +295,7 @@
           <div class="navigation">
             <div class="nav-link">
               <div class="forward-arrow"></div>
-              <h2>Instructions</h2>
+              <h2><a href="https://docs.google.com/document/d/1_YzoUSfNLoFMk1YMQWCkw0IEoA4vhxGo0dLu5d7wGNk/edit" target="_blank"> Instructions</h2>
             </div>
             <div class="nav-link">
               <div class="forward-arrow"></div>
@@ -297,7 +306,7 @@
                 <div class="forward-arrow"></div>
                 <h2 onclick="toggleDropdown()">History</h2>
                 <ol class="dropdown-content list-decimal list-inside">
-                    {% for item in history %}
+                    {% for item in history|reverse %}
                         <li class="text-blue-600">{{ item }}</li>
                     {% endfor %}
                 </ol>
@@ -313,7 +322,7 @@
             {% endwith %}
         </div>
         <div class="gen-container">
-            <h2 class="gen-title">Enter A Concise Keyword To Generate Keyword Ideas and Ad Groups</h2>
+            <h2 class="gen-title">Enter A Concise Keyword To Generate Ad Group Ideas</h2>
             <input class="gen-input" type="text" id="input_keyword" placeholder="Enter a concise keyword." required onkeydown="if (event.keyCode == 13) sendKeyword();">
             <button class="btn gen-button" onclick="sendKeyword()">Generate</button>
         </div>
@@ -321,15 +330,15 @@
     {% if keywords|length > 0 %}
     <div class="keyword-container">
             <div class="editable-container">
-                <h3 class="keyword-title">Editable Key Words</h3>
+                <h3 class="keyword-title">Editable Ad Group Ideas Box</h3>
                 <textarea id="keywords" name="keywords" rows="21" cols="30">{{ keyword_names|join('\n') }}</textarea>
                 <button class="btn keyword-button" onclick="copyToClipboard('keywords')">Copy</button>
             </div>
             <div class="metric-container">
-                <h3 class="keyword-title">Keyword by Volume and Total Monthly Clicks</h3>
+                <h3 class="keyword-title">Ad Group Ideas by Volume and Total Monthly Clicks</h3>
                 <table class="metric-table" cellspacing=0>
                     <tr>
-                        <th class="th-keyword">Keyword</th>
+                        <th class="th-keyword">Ad Group Idea</th>
                         <th class="th-volume">Estimated Monthly Volume</th>
                         <th class="th-clicks">Estimated Monthly Clicks</th>
                     </tr>
@@ -341,9 +350,6 @@
                         </tr>
                     {% endfor %}
                 </table>
-                <div class="metric-buttons">
-                    <button class="btn keyword-button" onclick="copyToClipboard('metrics')">Copy</button>
-                </div>
             </div>
         </div>
     {% endif %}
