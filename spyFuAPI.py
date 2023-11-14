@@ -25,6 +25,7 @@ def get_keyword_data(keywords):
         #     name = json.get('Customer', 'Key not found')
         #     visitors = json.get('Visitors_Paid', 'Key not found')
         #     data.update({f"{name}":f"{int(visitors)}"})
+        print(response.json())
         return response.json()
     else:
         print("Status code:", response.status_code)

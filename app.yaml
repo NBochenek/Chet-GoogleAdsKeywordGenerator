@@ -1,1 +1,4 @@
 runtime: python311
+
+error_handlers:
+  - file: error_page.html
