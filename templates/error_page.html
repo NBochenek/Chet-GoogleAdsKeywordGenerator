@@ -33,5 +33,13 @@
         <p>This app has encountered a fatal error. Please email or Slack Nick Bochenek at nick.bochenek@nonprofitmegaphone.com</p>
         <p>Please refresh the page to try again.</p>
     </div>
+        <div class="flashed_messages_containter">
+            <!-- Display Flashed Messages -->
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                <p class="text-red-600">{{ messages[0] }}</p>
+              {% endif %}
+            {% endwith %}
+        </div>
 </body>
 </html>

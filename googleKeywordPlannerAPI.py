@@ -1,3 +1,4 @@
+import validators
 from keys import client
 
 
@@ -12,7 +13,7 @@ def main(client, customer_id):
     generate_historical_metrics(client, customer_id)
 
 
-def generate_historical_metrics(client, customer_id):
+def generate_historical_metrics(client, customer_id, language, keyword_list):
     """Generates historical metrics and prints the results.
 
     Args:
@@ -23,7 +24,7 @@ def generate_historical_metrics(client, customer_id):
     keyword_plan_idea_service = client.get_service("KeywordPlanIdeaService")
     request = client.get_type("GenerateKeywordHistoricalMetricsRequest")
     request.customer_id = customer_id
-    request.keywords = ["mars cruise", "cheap cruise", "jupiter cruise"]
+    request.keywords = keyword_list
     # Geo target constant 2840 is for USA.
     request.geo_target_constants.append(
         googleads_service.geo_target_constant_path("2840")
@@ -34,55 +35,100 @@ def generate_historical_metrics(client, customer_id):
     # Language criteria 1000 is for English. For the list of language criteria
     # IDs, see:
     # https://developers.google.com/google-ads/api/reference/data/codes-formats#languages
-    request.language = googleads_service.language_constant_path("1000")
+
+    #TODO Fill out more language codes.
+
+    if language == "French":
+        language_code = "1002"
+    else:
+        language_code = "1000"
+
+    request.language = googleads_service.language_constant_path(f"{language_code}")
 
     response = keyword_plan_idea_service.generate_keyword_historical_metrics(
         request=request
     )
 
-    for result in response.results:
-        metrics = result.keyword_metrics
-        # These metrics include those for both the search query and any variants
-        # included in the response.
-        print(
-            f"The search query '{result.text}' (and the following variants: "
-            f"'{result.close_variants if result.close_variants else 'None'}'), "
-            "generated the following historical metrics:\n"
+    return response
+
+
+def kw_ideas(
+        client, customer_id, input
+):
+    ideas_dict = {}
+    #Convert the input to url or keyword based on the validator.
+    if validators.url(input) is True:
+        page_url = input
+        keyword_texts = None
+    else:
+        keyword_texts = input
+        page_url = None
+    keyword_plan_idea_service = client.get_service("KeywordPlanIdeaService")
+
+    # Either keywords or a page_url are required to generate keyword ideas
+    # so this raises an error if neither are provided.
+    if not (keyword_texts or page_url):
+        raise ValueError(
+            "At least one of keywords or page URL is required, "
+            "but neither was specified."
         )
 
-        # Approximate number of monthly searches on this query averaged for the
-        # past 12 months.
-        print(f"\tApproximate monthly searches: {metrics.avg_monthly_searches}")
+    # Only one of the fields "url_seed", "keyword_seed", or
+    # "keyword_and_url_seed" can be set on the request, depending on whether
+    # keywords, a page_url or both were passed to this function.
+    request = client.get_type("GenerateKeywordIdeasRequest")
+    request.customer_id = customer_id
+    request.include_adult_keywords = False
 
-        # The competition level for this search query.
-        print(f"\tCompetition level: {metrics.competition}")
+    # To generate keyword ideas with only a page_url and no keywords we need
+    # to initialize a UrlSeed object with the page_url as the "url" field.
+    if page_url:
+        request.url_seed.url = page_url
 
-        # The competition index for the query in the range [0, 100]. This shows
-        # how competitive ad placement is for a keyword. The level of
-        # competition from 0-100 is determined by the number of ad slots filled
-        # divided by the total number of ad slots available. If not enough data
-        # is available, undef will be returned.
-        print(f"\tCompetition index: {metrics.competition_index}")
+    # To generate keyword ideas with only a list of keywords and no page_url
+    # we need to initialize a KeywordSeed object and set the "keywords" field
+    # to be a list of StringValue objects.
+    if keyword_texts:
+        request.keyword_seed.keywords.extend(keyword_texts)
 
-        # Top of page bid low range (20th percentile) in micros for the keyword.
-        print(
-            f"\tTop of page bid low range: {metrics.low_top_of_page_bid_micros}"
-        )
+    # # To generate keyword ideas using both a list of keywords and a page_url we
+    # # need to initialize a KeywordAndUrlSeed object, setting both the "url" and
+    # # "keywords" fields.
+    # if keyword_texts and page_url:
+    #     request.keyword_and_url_seed.url = page_url
+    #     request.keyword_and_url_seed.keywords.extend(keyword_texts)
 
-        # Top of page bid high range (80th percentile) in micros for the
-        # keyword.
-        print(
-            "\tTop of page bid high range: "
-            f"{metrics.high_top_of_page_bid_micros}"
-        )
+    keyword_ideas = keyword_plan_idea_service.generate_keyword_ideas(
+        request=request
+    )
 
-        # Approximate number of searches on this query for the past twelve
-        # months.
-        for month in metrics.monthly_search_volumes:
-            print(
-                f"\tApproximately {month.monthly_searches} searches in "
-                f"{month.month.name}, {month.year}"
-            )
+    for idea in keyword_ideas:
+        ideas_dict[idea.text] = idea.keyword_idea_metrics.avg_monthly_searches
+    # Sorting the dictionary by value in descending order
+    sorted_data = dict(sorted(ideas_dict.items(), key=lambda item: item[1], reverse=True))
+    print(sorted_data, len(ideas_dict))
+
 
 if __name__ == '__main__':
-    main(client, "913-699-6873")
+    kw_ideas(client, "9136996873", [
+    "engineering conference",
+    "technical conference",
+    "engineering event",
+    "engineering seminar",
+    "engineering conference",
+    "engineering symposium",
+    "international engineering conference",
+    "national engineering conference",
+    "conference for engineers",
+    "professional engineering conference",
+    "industry conference for engineers",
+    "annual engineering conference",
+    "engineering conference registration",
+    "engineering conference agenda",
+    "engineering conference speakers",
+    "engineering conference tickets",
+    "engineering conference workshop",
+    "engineering conference networking",
+    "engineering conference panel discussion",
+    "engineering conference exhibitors"
+])

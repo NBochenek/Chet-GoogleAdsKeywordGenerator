@@ -4,10 +4,11 @@ import time
 import validators
 
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, make_response
-from keys import open_ai_key
+from keys import open_ai_key, client
 from models import Keyword
 from spyFuAPI import get_keyword_data
 from scraper import scrape_page
+from googleKeywordPlannerAPI import generate_historical_metrics
 
 
 app = Flask(__name__)
@@ -16,6 +17,10 @@ app.secret_key = "ghostfailurecurry"
 openai.api_key = open_ai_key
 
 language = "English"
+
+kw_engine = "both"
+# kw_engine = "spyfu"
+# kw_engine = "googlekeywordplanner"
 
 
 def generate_broad_ad_group_ideas(keyword):
@@ -53,7 +58,7 @@ def generate_tight_keyword_list(keyword):
         messages = [
             {"role": "system", "content": "You are a helpful assistant that generates Google Ads keywords."},
             {"role": "user", "content": f"Here is an input keyword: {keywords_input}."
-                                        f"Use this keyword to generate 20 new keywords based on the following principles:"
+                                        f"Use this keyword to generate 20 new unique keywords based on the following principles:"
                                         f" First, put the words in a different order as long as it doesn't change the meaning too much."
                                         "Second, use all fluent grammatical forms of essential words (e.g., compliance, comply, complying, complied)"
                                         "Third, include query phrases (e.g., what is/are, how to, where is/are, why."
@@ -81,15 +86,41 @@ def generate_tight_keyword_list(keyword):
 
 
 def generate_from_scrape(page_text):
+    #First summarize the text.
     try:
         keywords_input = page_text
         messages = [
             {"role": "system", "content": "You are a helpful assistant that generates Google Ads Ad Groups and Keywords."},
-            {"role": "user", "content": f"First, summarize this text: {keywords_input}."
-                                        f"Second, Use this summary to generate 20 ad group ideas based on the summary."
+            {"role": "user", "content": f"Summarize this text: {keywords_input}."
+             }
+        ]
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=messages,
+            max_tokens=500,
+            n=1,
+            stop=None,
+            temperature=0.8,
+        )
+
+        summary = response["choices"][0]["message"]["content"].lower()
+        print(f"Debug Summary: {summary}")
+
+    except openai.error.APIError as e:
+        print(e)
+    except openai.error.ServiceUnavailableError as e:
+        print(e)
+        time.sleep(5)
+
+    #Use the generated summary to create ad group ideas.
+    try:
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant that generates Google Ads Ad Groups and Keywords."},
+            {"role": "user", "content": f"First, here is a summary: {summary}."
+                                        f"Second, Use this summary to generate 20 unique ad group ideas based on the summary."
                                         "Third, When you have a list of 20 keywords, insert a line break after every keyword and return as a numbered list."
                                         f"Fourth, Your responses must be in the {language} language."
-                                        "Finally, Do not return the summary. Return only the numbered list."
+                                        "Finally, Return only the numbered list."
 
              }
         ]
@@ -144,30 +175,88 @@ def kw_obj_constructor(string, list): #TODO Create a dict for each keyword in st
 
         # for kw in kw_objs:
         #     # print(kw.stats())
-
-        kw_data = get_keyword_data(string) # Now run the SpyFu query and return the results.
+        try:
+            if kw_engine == "spyfu":
+                # Now run the SpyFu query and return the results.
+                kw_data = get_keyword_data(string)
+            if kw_engine == "googlekeywordplanner":
+                kw_data = generate_historical_metrics(client, "9136996873", language, list)
+            elif kw_engine == "both":
+                spyfu_kw_data = get_keyword_data(string)
+                google_kw_data = generate_historical_metrics(client, "9136996873", language, list)
+        except TypeError as e:
+            print(e)
+            flash(str(e))
+            return render_template("error_page.html")
         # print(kw_data)
         try:
-            for result in kw_data["results"]:
-                # print(result)
-                keyword = result['keyword'].replace("'", "")
-                for kw in kw_objs: #Loop through the keyword objects to look for matches. If found, update the data.
-                    if kw.name == keyword:
+            if kw_engine == "spyfu":
+                for result in kw_data["results"]:
+                    # print(result)
+                    keyword = result['keyword'].replace("'", "")
+                    for kw in kw_objs: #Loop through the keyword objects to look for matches. If found, update the data.
+                        if kw.name == keyword:
 
-                        search_volume = result.get('searchVolume', 0)
-                        clicks = result.get('totalMonthlyClicks', 0)
+                            search_volume = result.get('searchVolume', 0)
+                            clicks = result.get('totalMonthlyClicks', 0)
 
-                        kw.volume = search_volume
-                        kw.clicks = clicks
+                            kw.volume = search_volume
+                            kw.clicks = clicks
 
-                        print(f"Updated {kw.name} with Spyfu Data")
+                            print(f"Updated {kw.name} with Spyfu Data")
 
-            return kw_objs
+                return kw_objs
+            if kw_engine =="googlekeywordplanner":
+                #Loop through kw data results:
+                for result in kw_data.results:
+                    # Loop through the keyword objects to look for matches. If found, update the data.
+                    for kw in kw_objs:
+                        if kw.name == result.text:
+                            kw.volume = result.keyword_metrics.avg_monthly_searches
+                            print(f"Updated {kw.name} with Google Keyword Planner Data")
+                            break
+
+                    # print(f"{result.text}")
+                    # print(f"{result.keyword_metrics.avg_monthly_searches}")
+                return kw_objs
+            elif kw_engine == "both":
+                #Process Spyfu Results
+                for result in spyfu_kw_data["results"]:
+                    # print(result)
+                    keyword = result['keyword'].replace("'", "")
+                    for kw in kw_objs: #Loop through the keyword objects to look for matches. If found, update the data.
+                        if kw.name == keyword:
+
+                            search_volume = result.get('searchVolume', 0)
+                            clicks = result.get('totalMonthlyClicks', 0)
+
+                            kw.volume = search_volume
+                            kw.clicks = clicks
+
+                            print(f"Updated {kw.name} with Spyfu Data")
+                #Process GKW Results
+                for result in google_kw_data.results:
+                    # Loop through the keyword objects to look for matches. If found, update the data.
+                    for kw in kw_objs:
+                        if kw.name == result.text:
+                            if kw.volume is None or kw.volume < result.keyword_metrics.avg_monthly_searches:
+                                kw.volume = result.keyword_metrics.avg_monthly_searches
+                                print(f"Updated {kw.name} with Google Keyword Planner Data")
+                                break
+                            else:
+                                print(f"Did not update {kw.name} with Google Keyword Planner Data")
+
+                    # print(f"{result.text}")
+                    # print(f"{result.keyword_metrics.avg_monthly_searches}")
+                return kw_objs
         except Exception as e:
             print(e)
+            flash(str(e))
+            return render_template("error_page.html")
     except Exception as e:
         print(e)
-        return []
+        flash(str(e))
+        return render_template("error_page.html")
 
 
 def add_to_history(keyword):
@@ -206,11 +295,23 @@ def custom_keywords():
         if keyword: #Check to see if keyword exists.
             if validators.url(keyword) is True: #Check to see if keyword is a URL. If so, run a different function.
                 print("URL Found!")
-                custom_keywords = remove_numbers(scrape_suggest(keyword))
+                try:
+                    custom_keywords = remove_numbers(scrape_suggest(keyword))
+                except Exception as e:
+                    print(e)
+                    flash(str(e))
+                    flash("This error occured during web scraping.")
+                    return render_template("error_page.html")
                 cleaned_list = []
             else:
                 print("Not a URL.")
-                custom_keywords = remove_numbers(generate_broad_ad_group_ideas(keyword))
+                try:
+                    custom_keywords = remove_numbers(generate_broad_ad_group_ideas(keyword))
+                except Exception as e:
+                    print(e)
+                    flash(str(e))
+                    flash("This error occured during ad group idea generation.")
+                    return render_template("error_page.html")
                 cleaned_list = [keyword]
             for item in custom_keywords:
                 try:
@@ -242,8 +343,13 @@ def custom_keywords():
             return render_template("index.html", keywords=sorted_kw_objects, keyword_names=keyword_names, history=history)
         else:
             return render_template("index.html", error="Please enter a keyword.")
+    except TypeError as e:
+        app.logger.error(f"An error occurred: {e}")
+        flash(str(e))
+        return render_template("error_page.html")
     except Exception as e:
         app.logger.error(f"An error occurred: {e}")
+        flash(str(e))
         return render_template("error_page.html")
 
 
@@ -270,16 +376,18 @@ def generate_targeted_keywords():
         list_as_str = ", ".join(quoted_keywords)
 
 
-        kw_objects = kw_obj_constructor(list_as_str)
+        kw_objects = kw_obj_constructor(list_as_str, cleaned_list)
         sorted_kw_objects = sorted(kw_objects, key=lambda x: x.volume if x.volume is not None else 0, reverse=True)
-        keyword_names = [kw.name for kw in sorted_kw_objects]  #Allows the keywords to be easily rendered into the text box.
+        keyword_names = [kw.name for kw in
+                         sorted_kw_objects]  # Allows the keywords to be easily rendered into the text box.
         if len(keyword_names) < 20:
             no_data = []
             for item in cleaned_list:
                 if item not in keyword_names:
                     no_data.append(item)
-            keyword_names = cleaned_list
+            # keyword_names = cleaned_list
             flash(f"No keyword data found for some entries: \n{no_data}")
+            no_data.clear()
         return render_template("keyword_table.html", keywords=sorted_kw_objects, keyword_names=keyword_names, history=history, original_kw=og_keyword)
     else:
         flash("Error loading keyword")
