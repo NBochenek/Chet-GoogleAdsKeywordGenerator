@@ -106,29 +106,13 @@ def kw_ideas(
         ideas_dict[idea.text] = idea.keyword_idea_metrics.avg_monthly_searches
     # Sorting the dictionary by value in descending order
     sorted_data = dict(sorted(ideas_dict.items(), key=lambda item: item[1], reverse=True))
-    print(sorted_data, len(ideas_dict))
+    #Converts the dict to a list and trims it to the top 20 entries.
+    sorted_keys = list(sorted_data.keys())[:50]
+    # print(sorted_data, len(ideas_dict))
+    print(sorted_keys)
+    return sorted_keys
 
 
 if __name__ == '__main__':
-    kw_ideas(client, "9136996873", [
-    "engineering conference",
-    "technical conference",
-    "engineering event",
-    "engineering seminar",
-    "engineering conference",
-    "engineering symposium",
-    "international engineering conference",
-    "national engineering conference",
-    "conference for engineers",
-    "professional engineering conference",
-    "industry conference for engineers",
-    "annual engineering conference",
-    "engineering conference registration",
-    "engineering conference agenda",
-    "engineering conference speakers",
-    "engineering conference tickets",
-    "engineering conference workshop",
-    "engineering conference networking",
-    "engineering conference panel discussion",
-    "engineering conference exhibitors"
-])
+    kw_ideas(client, "9136996873", "https://bgcpbc.org/events/"
+)

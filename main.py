@@ -8,7 +8,7 @@ from keys import open_ai_key, client
 from models import Keyword
 from spyFuAPI import get_keyword_data
 from scraper import scrape_page
-from googleKeywordPlannerAPI import generate_historical_metrics
+from googleKeywordPlannerAPI import generate_historical_metrics, kw_ideas
 
 
 app = Flask(__name__)
@@ -16,20 +16,36 @@ app.secret_key = "ghostfailurecurry"
 
 openai.api_key = open_ai_key
 
-language = "English"
 
-kw_engine = "both"
-# kw_engine = "spyfu"
-# kw_engine = "googlekeywordplanner"
+@app.before_request
+def set_default_session_variables():
+    if 'language' not in session:
+        session['language'] = "english"
+    if 'keyword_engine' not in session:
+        session['keyword_engine'] = "both"  # Default to "both", could be "spyfu" or "googlekeywordplanner"
+    if 'idea_engine' not in session:
+        session['idea_engine'] = "openai"  # Default to "openai", could be "googlekeywordplanner"
+    if 'url_idea_engine' not in session:
+        session['url_idea_engine'] = "googlekeywordplanner"  # Default to "googlekeywordplanner", could be "openai"
 
 
-def generate_broad_ad_group_ideas(keyword):
+def get_variables():
+    # Convert session variables to local variables
+    language = session.get('language', "english")  # Default to "English" if not set
+    keyword_engine = session.get('keyword_engine', "both")  # Default to "both"
+    idea_engine = session.get('idea_engine', "openai")  # Default to "openai"
+    url_idea_engine = session.get('url_idea_engine', "googlekeywordplanner")  # Default to "googlekeywordplanner"
+    return language, keyword_engine, idea_engine, url_idea_engine
+
+
+def generate_broad_ad_group_ideas(keyword, language):
     try:
         keywords_input = keyword
         messages = [
-            {"role": "system", "content": "You are a helpful assistant that generates Google Ads keywords."},
-            {"role": "user", "content": f"Based on this keyword, generate 20 unique Google Ads keywords:\n\n{keywords_input}" 
-                                        "Insert a line break after every keyword and return as a numbered list."
+            {"role": "system", "content": "You are a helpful assistant that generates Google Ads Ad Group Ideas."},
+            {"role": "user", "content": f"Based on this keyword, generate 20 unique Google Ads Ad Groups:\n\n{keywords_input}"
+                                        f"Each Ad Group should be fewer than 4 words." 
+                                        "Insert a line break after every Ad Group and return as a numbered list."
                                         f"Your responses must be in the {language} language."}
         ]
         response = openai.ChatCompletion.create(
@@ -54,6 +70,7 @@ def generate_broad_ad_group_ideas(keyword):
 
 def generate_tight_keyword_list(keyword):
     try:
+        language = session.get('language', "english")
         keywords_input = keyword
         messages = [
             {"role": "system", "content": "You are a helpful assistant that generates Google Ads keywords."},
@@ -61,8 +78,9 @@ def generate_tight_keyword_list(keyword):
                                         f"Use this keyword to generate 20 new unique keywords based on the following principles:"
                                         f" First, put the words in a different order as long as it doesn't change the meaning too much."
                                         "Second, use all fluent grammatical forms of essential words (e.g., compliance, comply, complying, complied)"
-                                        "Third, include query phrases (e.g., what is/are, how to, where is/are, why."
-                                        f"Fourth, your responses must be in the {language} language."
+                                        "Third, substitute nouns and adjectives with synonyms where possible."
+                                        
+                                        f"Finally, your responses must be in the {language} language."
                                         "When you have a list of 20 keywords, insert a line break after every keyword and return as a numbered list."}
         ]
         response = openai.ChatCompletion.create(
@@ -86,6 +104,7 @@ def generate_tight_keyword_list(keyword):
 
 
 def generate_from_scrape(page_text):
+    language = session.get('language', "english")
     #First summarize the text.
     try:
         keywords_input = page_text
@@ -118,8 +137,9 @@ def generate_from_scrape(page_text):
             {"role": "system", "content": "You are a helpful assistant that generates Google Ads Ad Groups and Keywords."},
             {"role": "user", "content": f"First, here is a summary: {summary}."
                                         f"Second, Use this summary to generate 20 unique ad group ideas based on the summary."
-                                        "Third, When you have a list of 20 keywords, insert a line break after every keyword and return as a numbered list."
-                                        f"Fourth, Your responses must be in the {language} language."
+                                        f"Third, each idea should be no more than four words in length."
+                                        "Fourth, When you have a list of 20 keywords, insert a line break after every keyword and return as a numbered list."
+                                        f"Fifth, Your responses must be in the {language} language."
                                         "Finally, Return only the numbered list."
 
              }
@@ -146,7 +166,7 @@ def generate_from_scrape(page_text):
 
 def remove_numbers(text_list):
     try:
-        # cleaned_list = [re.sub(r'\d', '', text, count=2) for text in text_list]
+        # Initial processing
         cleaned_list = [text.lstrip('.') for text in text_list]
         cleaned_list = [text.strip() for text in cleaned_list]
         cleaned_list = [text.replace("'", "") for text in cleaned_list]
@@ -157,14 +177,26 @@ def remove_numbers(text_list):
         cleaned_list = [text.replace(")", "") for text in cleaned_list]
         cleaned_list = [text.replace("  ", " ") for text in cleaned_list]
         cleaned_list = [text.replace("&", "And") for text in cleaned_list]
+
+        # Remove all characters before the first letter
+        final_list = []
+        for item in cleaned_list:
+            match = re.search("[a-zA-Z]", item)
+            if match:
+                cleaned_item = item[match.start():]
+                final_list.append(cleaned_item)
+            else:
+                final_list.append(item)
     except TypeError as e:
         print(e)
         return text_list
-    return cleaned_list
+    return final_list
 
 
 def kw_obj_constructor(string, list): #TODO Create a dict for each keyword in string. Then, run the request to get search info. If the keys(names) match, update the data.
     kw_objs = []
+    keyword_engine = session.get('keyword_engine', "both")
+    language = session.get('language', "english")
     count = 1
     try:
         #Construct the initial object based on the list:
@@ -176,21 +208,20 @@ def kw_obj_constructor(string, list): #TODO Create a dict for each keyword in st
         # for kw in kw_objs:
         #     # print(kw.stats())
         try:
-            if kw_engine == "spyfu":
+            if keyword_engine == "spyfu":
                 # Now run the SpyFu query and return the results.
                 kw_data = get_keyword_data(string)
-            if kw_engine == "googlekeywordplanner":
+            if keyword_engine == "googlekeywordplanner":
                 kw_data = generate_historical_metrics(client, "9136996873", language, list)
-            elif kw_engine == "both":
+            elif keyword_engine == "both":
                 spyfu_kw_data = get_keyword_data(string)
                 google_kw_data = generate_historical_metrics(client, "9136996873", language, list)
         except TypeError as e:
             print(e)
             flash(str(e))
-            return render_template("error_page.html")
         # print(kw_data)
         try:
-            if kw_engine == "spyfu":
+            if keyword_engine == "spyfu":
                 for result in kw_data["results"]:
                     # print(result)
                     keyword = result['keyword'].replace("'", "")
@@ -206,7 +237,7 @@ def kw_obj_constructor(string, list): #TODO Create a dict for each keyword in st
                             print(f"Updated {kw.name} with Spyfu Data")
 
                 return kw_objs
-            if kw_engine =="googlekeywordplanner":
+            if keyword_engine =="googlekeywordplanner":
                 #Loop through kw data results:
                 for result in kw_data.results:
                     # Loop through the keyword objects to look for matches. If found, update the data.
@@ -219,7 +250,7 @@ def kw_obj_constructor(string, list): #TODO Create a dict for each keyword in st
                     # print(f"{result.text}")
                     # print(f"{result.keyword_metrics.avg_monthly_searches}")
                 return kw_objs
-            elif kw_engine == "both":
+            elif keyword_engine == "both":
                 #Process Spyfu Results
                 for result in spyfu_kw_data["results"]:
                     # print(result)
@@ -284,11 +315,24 @@ def scrape_suggest(url):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     app.logger.info('Processing request for the root path')
-    return render_template('index.html')
+    language = session.get('language', "english")  # Default to "English" if not set
+    keyword_engine = session.get('keyword_engine', "both")  # Default to "both"
+    idea_engine = session.get('idea_engine', "openai")  # Default to "openai"
+    url_idea_engine = session.get('url_idea_engine', "googlekeywordplanner")  # Default to "googlekeywordplanner"
+    # Now you can use these local variables for your logic, calculations, or pass them to your template
+    # For example, passing them to a template to display
+    print(f"Debug Settings: {language}, {keyword_engine}, {idea_engine}, {url_idea_engine}")
+    return render_template('index.html', language=language, keyword_engine=keyword_engine, idea_engine=idea_engine,
+                           url_idea_engine=url_idea_engine)
 
 @app.route('/custom_keywords', methods=['GET'])
 def custom_keywords():
-    print("Button Clicked! Generating Keywords...")
+    print("Button Clicked!")
+    print("Generating Ad Group Ideas...")
+    language = session.get('language', "english")  # Default to "English" if not set
+    keyword_engine = session.get('keyword_engine', "both")  # Default to "both"
+    idea_engine = session.get('idea_engine', "openai")  # Default to "openai"
+    url_idea_engine = session.get('url_idea_engine', "googlekeywordplanner")  # Default to "googlekeywordplanner"
     keyword = request.args.get('keyword', '')
     history = add_to_history(keyword)
     try:
@@ -296,7 +340,10 @@ def custom_keywords():
             if validators.url(keyword) is True: #Check to see if keyword is a URL. If so, run a different function.
                 print("URL Found!")
                 try:
-                    custom_keywords = remove_numbers(scrape_suggest(keyword))
+                    if url_idea_engine == "openai":
+                        custom_keywords = remove_numbers(scrape_suggest(keyword))
+                    elif url_idea_engine == "googlekeywordplanner":
+                        custom_keywords = kw_ideas(client, "9136996873", str(keyword))
                 except Exception as e:
                     print(e)
                     flash(str(e))
@@ -306,19 +353,24 @@ def custom_keywords():
             else:
                 print("Not a URL.")
                 try:
-                    custom_keywords = remove_numbers(generate_broad_ad_group_ideas(keyword))
+                    #TODO Create paths for the 3 idea engine options
+                    custom_keywords = remove_numbers(generate_broad_ad_group_ideas(keyword, language))
                 except Exception as e:
                     print(e)
                     flash(str(e))
                     flash("This error occured during ad group idea generation.")
                     return render_template("error_page.html")
                 cleaned_list = [keyword]
-            for item in custom_keywords:
-                try:
-                    cleaned_item = item.split(" ", 1)[1]  # Split at the first space
-                    cleaned_list.append(cleaned_item)
-                except IndexError:  # If split fails, keep the original item
-                    cleaned_list.append(item)
+            #If we're using the GKP URL module, then the entries are already in a list.
+            if not url_idea_engine == "googlekeywordplanner":
+                for item in custom_keywords:
+                    try:
+                        cleaned_item = item.split(" ", 1)[1]  # Split at the first space
+                        cleaned_list.append(cleaned_item)
+                    except IndexError:  # If split fails, keep the original item
+                        cleaned_list.append(item)
+            else:
+                cleaned_list = custom_keywords
 
             # This ensures that entries with commas are treated as single entries
             quoted_keywords = ['"{}"'.format(kw) for kw in cleaned_list]
@@ -347,6 +399,10 @@ def custom_keywords():
         app.logger.error(f"An error occurred: {e}")
         flash(str(e))
         return render_template("error_page.html")
+    except AttributeError as e:
+        print(e)
+        flash(str(e))
+        return render_template("error_page.html")
     except Exception as e:
         app.logger.error(f"An error occurred: {e}")
         flash(str(e))
@@ -355,6 +411,8 @@ def custom_keywords():
 
 @app.route('/targeted_keywords', methods=['GET'])
 def generate_targeted_keywords():
+    print("Button Clicked!")
+    print("Generating targeted keywords...")
     og_keyword = request.args.get('keyword', '')
     print(og_keyword)
 
@@ -392,6 +450,28 @@ def generate_targeted_keywords():
     else:
         flash("Error loading keyword")
         return redirect(url_for('index'))
+
+
+@app.route('/options', methods=['GET', 'POST'])
+def options():
+    if request.method == 'POST':
+        # Update session variables from form inputs
+        session['language'] = request.form.get('language', session['language'])
+        session['keyword_engine'] = request.form.get('keywordEngine', session['keyword_engine'])
+        session['idea_engine'] = request.form.get('ideaEngine', session['idea_engine'])
+        session['url_idea_engine'] = request.form.get('urlIdeaEngine', session['url_idea_engine'])
+
+        # Redirect to a new page or back to the form page after processing.
+        # You might want to redirect to a confirmation page or back to the form
+        # with a success message. For simplicity, we'll redirect back to the form.
+        return redirect(url_for('index'))
+
+    # If method is GET, just render the template.
+    return render_template('options.html',
+                           current_language=session.get('language', 'english'),
+                           current_keyword_engine=session.get('keyword_engine', 'both'),
+                           current_idea_engine=session.get('idea_engine', 'openai'),
+                           current_url_idea_engine=session.get('url_idea_engine', 'googlekeywordplanner'))
 
 
 if __name__ == '__main__':

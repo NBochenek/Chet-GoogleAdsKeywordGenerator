@@ -1,0 +1,74 @@
+{% extends "index.html" %}
+
+{% block content %}
+    <h1>Options</h1>
+    <form action="/options" method="POST">
+        <div class="form-group">
+            <label for="language">Language</label>
+            <select id="language" title="Choose your preferred language" name="language">
+                {% set languages = [('english', 'English (Default)'), ('spanish', 'Spanish'), ('french', 'French')] %}
+                <!-- Ensure the current session value appears first -->
+                {% for code, name in languages %}
+                    {% if code == current_language %}
+                        <option value="{{ code }}" selected><b>{{ name }}</b></option>
+                    {% endif %}
+                {% endfor %}
+                <!-- List other options, excluding the current session value -->
+                {% for code, name in languages %}
+                    {% if code != current_language %}
+                        <option value="{{ code }}">{{ name }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="keywordEngine">Keyword Engine</label>
+            <select id="keywordEngine" title="This engine determines how search/click stats are populated. Use of Both is strongly suggested." name="keywordEngine">
+                {% set engines = [('both', 'Both (Default)'), ('googlekeywordplanner', 'Google'), ('spyfu', 'SpyFu')] %}
+                {% for code, name in engines %}
+                    {% if code == current_keyword_engine %}
+                        <option value="{{ code }}" selected><b>{{ name }}</b></option>
+                    {% endif %}
+                {% endfor %}
+                {% for code, name in engines %}
+                    {% if code != current_keyword_engine %}
+                        <option value="{{ code }}">{{ name }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="ideaEngine">Idea Engine</label>
+            <select id="ideaEngine" title="This engine determines how ad group ideas are generated when an initial idea is entered." name="ideaEngine">
+                {% set engines = [('openai', 'OpenAI (Default)'), ('googlekeywordplanner', 'Google')] %}
+                {% for code, name in engines %}
+                    {% if code == current_idea_engine %}
+                        <option value="{{ code }}" selected><b>{{ name }}</b></option>
+                    {% endif %}
+                {% endfor %}
+                {% for code, name in engines %}
+                    {% if code != current_idea_engine %}
+                        <option value="{{ code }}">{{ name }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="urlIdeaEngine">URL Idea Engine</label>
+            <select id="urlIdeaEngine" title="This engine determines how ad group ideas are generated when a URL is entered." name="urlIdeaEngine">
+                {% set engines = [('googlekeywordplanner', 'Google (Default)'), ('openai', 'OpenAI')] %}
+                {% for code, name in engines %}
+                    {% if code == current_url_idea_engine %}
+                        <option value="{{ code }}" selected><b>{{ name }}</b></option>
+                    {% endif %}
+                {% endfor %}
+                {% for code, name in engines %}
+                    {% if code != current_url_idea_engine %}
+                        <option value="{{ code }}">{{ name }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit">Save Options</button>
+    </form>
+{% endblock %}
