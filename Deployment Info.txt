@@ -9,3 +9,5 @@ gcloud app deploy --project npm-ad-keyword-tool --version stable
 When deploying DEVELOPMENT version, use the following command:
 
 gcloud app deploy --project npm-ad-keyword-tool --version dev --no-promote
+
+pip freeze > requirements.txt

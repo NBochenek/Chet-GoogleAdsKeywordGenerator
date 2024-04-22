@@ -324,38 +324,48 @@
               {% endif %}
             {% endwith %}
         </div>
+        <!-- Conditional button for generating from selected keywords -->
+        {% if iterative_generation %}
         <div class="gen-container">
-            <h2 class="gen-title">Enter A Concise Keyword Or URL To Generate Ad Group Ideas</h2>
-            <input class="gen-input" type="text" id="input_keyword" placeholder="Enter a concise keyword or URL." required onkeydown="if (event.keyCode == 13) sendKeyword();">
+            <h2 class="gen-title">Enter A Concise Keyword, Text Chunk, Or URL To Generate Ad Group Ideas</h2>
+            <input class="gen-input" type="text" id="input_keyword" placeholder="Enter a concise keyword, text chunk, or URL." required onkeydown="if (event.keyCode == 13) sendKeyword();">
+            <button class="btn gen-button" onclick="sendKeyword()">Generate</button>
+            <button class="btn gen-button" onclick="sendSelectedKeywords()">Generate From Selected</button>
+        </div>
+        {% else %}
+        <div class="gen-container">
+            <h2 class="gen-title">Enter A Concise Keyword, Text Chunk, Or URL To Generate Ad Group Ideas</h2>
+            <input class="gen-input" type="text" id="input_keyword" placeholder="Enter a concise keyword, text chunk, or URL." required onkeydown="if (event.keyCode == 13) sendKeyword();">
             <button class="btn gen-button" onclick="sendKeyword()">Generate</button>
         </div>
-        <!-- Described in the CSS above too. The keywords textarea and table are related and together take up with width of the page, so let's put them in a containing div together -->
-    {% if keywords|length > 0 %}
-    <div class="keyword-container">
-            <div class="editable-container">
-                <h3 class="keyword-title">Editable Ad Group Ideas Box</h3>
-                <textarea id="keywords" name="keywords" rows="21" cols="30">{{ keyword_names|join('\n') }}</textarea>
-                <button class="btn keyword-button" onclick="copyToClipboard('keywords')">Copy</button>
-            </div>
-            <div class="metric-container">
-                <h3 class="keyword-title">Ad Group Ideas by Volume and Total Monthly Clicks</h3>
-                <table class="metric-table" cellspacing=0>
-                    <tr>
-                        <th class="th-keyword">Ad Group Idea</th>
-                        <th class="th-volume" title="Populated by Spyfu or GKP, Whichever is Higher.">Estimated Monthly Volume</th>
-                        <th class="th-clicks" title="Populated By Spyfu.">Estimated Monthly Clicks</th>
-                    </tr>
-                    {% for keyword in keywords %}
-                        <tr>
-                            <td class=td-keyword title="Click to generate keyword list based on this item." onclick="sendKeywordToNewTab('{{ keyword.name }}')" target="_blank">{{ keyword.name }}</td>
-                            <td class="text-left">{{ keyword.volume }}</td>
-                            <td class="text-left">{{ keyword.clicks }}</td>
-                        </tr>
-                    {% endfor %}
-                </table>
-            </div>
+        {% endif %}
+
+        <!-- Conditional table column for selecting keywords -->
+        {% if keywords|length > 0 %}
+        <div class="metric-container">
+            <h3 class="keyword-title">Ad Group Ideas by Volume and Total Monthly Clicks</h3>
+            <table class="metric-table" cellspacing="0">
+                <tr>
+                    <th class="th-keyword">Ad Group Idea</th>
+                    <th class="th-volume" title="Populated by Spyfu or GKP, Whichever is Higher.">Estimated Monthly Volume</th>
+                    <th class="th-clicks" title="Populated By Spyfu.">Estimated Monthly Clicks</th>
+                    {% if iterative_generation %}
+                    <th class="th-select">Select?</th> <!-- Conditionally displayed header for the checkbox column -->
+                    {% endif %}
+                </tr>
+                {% for keyword in keywords %}
+                <tr>
+                    <td class="td-keyword" title="Click to generate keyword list based on this item." onclick="sendKeywordToNewTab('{{ keyword.name }}')" target="_blank">{{ keyword.name }}</td>
+                    <td class="text-left">{{ keyword.volume }}</td>
+                    <td class="text-left">{{ keyword.clicks }}</td>
+                    {% if iterative_generation %}
+                    <td class="text-center"><input type="checkbox" name="selectKeyword" value="{{ keyword.name }}"></td> <!-- Conditionally displayed checkbox in each row -->
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </table>
         </div>
-    {% endif %}
+        {% endif %}
         {% endblock %}
     </body>
 </html>

@@ -84,6 +84,46 @@ function sendKeyword(keyword) {
         .catch(error => console.error('Error:', error));
 }
 
+function sendSelectedKeywords() {
+    showLoadingSpinner(); // Assuming this function exists to show a loading spinner
+
+    // Gather all checkbox elements
+    var checkboxes = document.querySelectorAll('input[name="selectKeyword"]:checked');
+
+    // Extract the value of each checked checkbox
+    var selectedKeywords = Array.from(checkboxes).map(function(checkbox) {
+        return checkbox.value;
+    });
+
+    // Check if no keywords have been selected
+    if (selectedKeywords.length === 0) {
+        hideLoadingSpinner()
+        alert('No Keywords Selected. Please Try Again.');
+        return; // Stop the function execution
+    }
+
+    // Use fetch to create a POST request to send the data
+    fetch('/selected_keywords', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({keywords: selectedKeywords})
+    })
+    .then(response => response.text())
+    .then(data => {
+        document.open();
+        document.write(data);
+        document.close();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Optionally, stop the spinner if there's an error
+    });
+}
+
+
+
 function toggleDropdown() {
     var dropdownContent = document.querySelector(".dropdown-content");
     if (dropdownContent.style.display === "block") {
@@ -106,6 +146,31 @@ function sendKeywordToNewTab(keyword) {
         })
         .catch(error => console.error('Error:', error));
 }
+
+function submitFeedback(type, event) {
+    const buttons = document.querySelectorAll('.feedback-button'); // Select all buttons
+    buttons.forEach(button => button.disabled = true); // Disable all buttons
+
+    fetch('/submit_feedback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `feedback=${encodeURIComponent(type)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Success:', data);
+        alert('Thank you for your feedback!');
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        alert('Error submitting feedback');
+        buttons.forEach(button => button.disabled = false); // Optionally re-enable the buttons on error if desired
+    });
+}
+
+
 
 
 

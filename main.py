@@ -9,7 +9,16 @@ from models import Keyword
 from spyFuAPI import get_keyword_data
 from scraper import scrape_page
 from googleKeywordPlannerAPI import generate_historical_metrics, kw_ideas
+from google.cloud import logging
 
+
+# Instantiates a client
+logging_client = logging.Client()
+
+# Retrieves a Cloud Logging handler based on the environment
+# you're running in and integrates the handler with the
+# Python logging module.
+logger = logging_client.logger('feedback-logger')
 
 app = Flask(__name__)
 app.secret_key = "ghostfailurecurry"
@@ -27,6 +36,8 @@ def set_default_session_variables():
         session['idea_engine'] = "openai"  # Default to "openai", could be "googlekeywordplanner"
     if 'url_idea_engine' not in session:
         session['url_idea_engine'] = "googlekeywordplanner"  # Default to "googlekeywordplanner", could be "openai"
+    if 'iterative_generation' not in session:
+        session['iterative_generation'] = False
 
 
 def get_variables():
@@ -35,7 +46,8 @@ def get_variables():
     keyword_engine = session.get('keyword_engine', "both")  # Default to "both"
     idea_engine = session.get('idea_engine', "openai")  # Default to "openai"
     url_idea_engine = session.get('url_idea_engine', "googlekeywordplanner")  # Default to "googlekeywordplanner"
-    return language, keyword_engine, idea_engine, url_idea_engine
+    iterative_generation = session.get('iterative_generation', False)
+    return language, keyword_engine, idea_engine, url_idea_engine, iterative_generation
 
 
 def generate_broad_ad_group_ideas(keyword, language):
@@ -67,6 +79,36 @@ def generate_broad_ad_group_ideas(keyword, language):
         print(e)
         time.sleep(5)
 
+
+def iterative_generation_function(input, language):
+    try:
+        keywords_input = input
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant that generates Google Ads Ad Group Ideas."},
+            {"role": "user", "content": f"Based on this input, generate 10 unique Google Ads Ad Group Ideas:\n\n{keywords_input}"
+                                        f"Each Ad Group Idea should be fewer than 4 words."
+                                        f"Each Ad Group Idea should be relevant to the others."
+                                        "Insert a line break after every Ad Group and return as a list."
+                                        f"Your responses must be in the {language} language."}
+        ]
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            max_tokens=500,
+            n=1,
+            stop=None,
+            temperature=0.8,
+        )
+
+        # keywords = response["choices"][0]["message"]["content"].lower().lstrip().strip().split("\n")[:20]
+        keywords = response
+        return keywords  # Return the list of keywords instead of the formatted
+
+    except openai.error.APIError as e:
+        print(e)
+    except openai.error.ServiceUnavailableError as e:
+        print(e)
+        time.sleep(5)
 
 def generate_tight_keyword_list(keyword):
     try:
@@ -109,7 +151,7 @@ def generate_from_scrape(page_text):
     try:
         keywords_input = page_text
         messages = [
-            {"role": "system", "content": "You are a helpful assistant that generates Google Ads Ad Groups and Keywords."},
+            {"role": "system", "content": "You are a helpful assistant that creates useful summaries out of scraped web page text."},
             {"role": "user", "content": f"Summarize this text: {keywords_input}."
              }
         ]
@@ -124,6 +166,7 @@ def generate_from_scrape(page_text):
 
         summary = response["choices"][0]["message"]["content"].lower()
         print(f"Debug Summary: {summary}")
+        flash(f"Summary: {summary}")
 
     except openai.error.APIError as e:
         print(e)
@@ -319,11 +362,12 @@ def index():
     keyword_engine = session.get('keyword_engine', "both")  # Default to "both"
     idea_engine = session.get('idea_engine', "openai")  # Default to "openai"
     url_idea_engine = session.get('url_idea_engine', "googlekeywordplanner")  # Default to "googlekeywordplanner"
+    iterative_generation = session.get('iterative_generation', False)
     # Now you can use these local variables for your logic, calculations, or pass them to your template
     # For example, passing them to a template to display
-    print(f"Debug Settings: {language}, {keyword_engine}, {idea_engine}, {url_idea_engine}")
+    print(f"Debug Settings: {language}, {keyword_engine}, {idea_engine}, {url_idea_engine}, {iterative_generation}")
     return render_template('index.html', language=language, keyword_engine=keyword_engine, idea_engine=idea_engine,
-                           url_idea_engine=url_idea_engine)
+                           url_idea_engine=url_idea_engine, iterative_generation=iterative_generation)
 
 @app.route('/custom_keywords', methods=['GET'])
 def custom_keywords():
@@ -333,17 +377,24 @@ def custom_keywords():
     keyword_engine = session.get('keyword_engine', "both")  # Default to "both"
     idea_engine = session.get('idea_engine', "openai")  # Default to "openai"
     url_idea_engine = session.get('url_idea_engine', "googlekeywordplanner")  # Default to "googlekeywordplanner"
+    iterative_generation = session.get('iterative_generation', False)
     keyword = request.args.get('keyword', '')
     history = add_to_history(keyword)
+    input_is_chunk = False
     try:
         if keyword: #Check to see if keyword exists.
-            if validators.url(keyword) is True: #Check to see if keyword is a URL. If so, run a different function.
-                print("URL Found!")
+            if validators.url(keyword) or len(keyword) > 20:
+                #Check to see if keyword is a URL. If so, run a different function.
+                # OR If the keyword is long, that indicates that it is a chunk of text and should be summarized.
+                print("URL or text chunk found!")
                 try:
                     if url_idea_engine == "openai":
                         custom_keywords = remove_numbers(scrape_suggest(keyword))
-                    elif url_idea_engine == "googlekeywordplanner":
+                    elif url_idea_engine == "googlekeywordplanner" and validators.url(keyword):
                         custom_keywords = kw_ideas(client, "9136996873", str(keyword))
+                    else: #By this point, the only possibility is that the input is a text chunk. Run it through the openAI function.
+                        input_is_chunk = True
+                        custom_keywords = remove_numbers(generate_from_scrape(keyword))
                 except Exception as e:
                     print(e)
                     flash(str(e))
@@ -353,7 +404,6 @@ def custom_keywords():
             else:
                 print("Not a URL.")
                 try:
-                    #TODO Create paths for the 3 idea engine options
                     custom_keywords = remove_numbers(generate_broad_ad_group_ideas(keyword, language))
                 except Exception as e:
                     print(e)
@@ -361,8 +411,10 @@ def custom_keywords():
                     flash("This error occured during ad group idea generation.")
                     return render_template("error_page.html")
                 cleaned_list = [keyword]
+
+
             #If we're using the GKP URL module, then the entries are already in a list.
-            if not url_idea_engine == "googlekeywordplanner":
+            if url_idea_engine != "googlekeywordplanner" or input_is_chunk:
                 for item in custom_keywords:
                     try:
                         cleaned_item = item.split(" ", 1)[1]  # Split at the first space
@@ -371,6 +423,8 @@ def custom_keywords():
                         cleaned_list.append(item)
             else:
                 cleaned_list = custom_keywords
+                #Ensure that the list also includes the keyword in the first position
+                cleaned_list.insert(0, keyword)
 
             # This ensures that entries with commas are treated as single entries
             quoted_keywords = ['"{}"'.format(kw) for kw in cleaned_list]
@@ -392,7 +446,7 @@ def custom_keywords():
                 flash(f"No keyword data found for some entries: \n{no_data}")
                 no_data.clear()
 
-            return render_template("index.html", keywords=sorted_kw_objects, keyword_names=keyword_names, history=history)
+            return render_template("index.html", keywords=sorted_kw_objects, keyword_names=keyword_names, history=history, iterative_generation=iterative_generation)
         else:
             return render_template("index.html", error="Please enter a keyword.")
     except TypeError as e:
@@ -460,6 +514,7 @@ def options():
         session['keyword_engine'] = request.form.get('keywordEngine', session['keyword_engine'])
         session['idea_engine'] = request.form.get('ideaEngine', session['idea_engine'])
         session['url_idea_engine'] = request.form.get('urlIdeaEngine', session['url_idea_engine'])
+        session['iterative_generation'] = request.form.get('iterativeGeneration', session['iterative_generation'])
 
         # Redirect to a new page or back to the form page after processing.
         # You might want to redirect to a confirmation page or back to the form
@@ -471,9 +526,71 @@ def options():
                            current_language=session.get('language', 'english'),
                            current_keyword_engine=session.get('keyword_engine', 'both'),
                            current_idea_engine=session.get('idea_engine', 'openai'),
-                           current_url_idea_engine=session.get('url_idea_engine', 'googlekeywordplanner'))
+                           current_url_idea_engine=session.get('url_idea_engine', 'googlekeywordplanner'),
+                           current_iterative_generation=session.get('iterative_generation', False))
+
+
+@app.route('/submit_feedback', methods=['POST'])
+def submit_feedback():
+    feedback_type = request.form['feedback']
+    # Log the feedback using Google Cloud Logging
+    print("Debug: Feedback logged.")
+    logger.log_text(f"Feedback received: {feedback_type}", severity='INFO')
+    # Process and store the feedback as needed
+    return jsonify(success=True, message='Feedback received')
+
+@app.route('/selected_keywords', methods=['POST'])
+def handle_keywords():
+    data = request.get_json()
+    keywords = data['keywords']
+    print(keywords)
+    # Init
+    history = add_to_history(keywords)
+    language = session.get('language', "english")
+    keyword_engine = session.get('keyword_engine', "both")
+    iterative_generation = session.get('iterative_generation', False)
+
+    #Generate the ideas
+    try:
+        custom_keywords = remove_numbers(iterative_generation_function(keywords, language))
+    except Exception as e:
+        print(e)
+        flash(str(e))
+        flash("This error occured during ad group idea generation.")
+        return render_template("error_page.html")
+
+    #Get engine data and convert to objects
+
+    #insert input keywords to list.
+    for item in keywords:
+        custom_keywords.insert(0, item)
+    cleaned_list = custom_keywords
+
+    # This ensures that entries with commas are treated as single entries
+    quoted_keywords = ['"{}"'.format(kw) for kw in cleaned_list]
+
+    # Now join the items, they're safely quoted
+    list_as_str = ", ".join(quoted_keywords)
+
+    print(list_as_str)
+
+    kw_objects = kw_obj_constructor(list_as_str, cleaned_list)
+    sorted_kw_objects = sorted(kw_objects, key=lambda x: x.volume if x.volume is not None else 0, reverse=True)
+    keyword_names = [kw.name for kw in
+                     sorted_kw_objects]  # Allows the keywords to be easily rendered into the text box.
+    if len(keyword_names) < 20:
+        no_data = []
+        for item in cleaned_list:
+            if item not in keyword_names:
+                no_data.append(item)
+        # keyword_names = cleaned_list
+        flash(f"No keyword data found for some entries: \n{no_data}")
+        no_data.clear()
+
+    return render_template("index.html", keywords=sorted_kw_objects, keyword_names=keyword_names, history=history, iterative_generation=iterative_generation)
 
 
 if __name__ == '__main__':
     app.run(debug=True)
+    # print(iterative_generation(["Museums Near Me", "Art Museums", "Museum Tours"], "english"))
 

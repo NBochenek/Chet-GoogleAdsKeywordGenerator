@@ -69,6 +69,14 @@
                 {% endfor %}
             </select>
         </div>
+        <div class="form-group">
+        <label for="iterativeGeneration">Iterative Generation</label>
+        <select id="iterativeGeneration" title="Enables or disables iterative generation for content." name="iterativeGeneration">
+            <!-- Set the default option and allow the user to change it -->
+            <option value="false" selected>False (Default)</option>
+            <option value="true">True</option>
+        </select>
+        </div>
         <button type="submit">Save Options</button>
     </form>
 {% endblock %}
