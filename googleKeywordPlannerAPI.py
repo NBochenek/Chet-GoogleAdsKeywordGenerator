@@ -49,7 +49,8 @@ def generate_historical_metrics(client, customer_id, language, keyword_list):
         request=request
     )
 
-    return response
+    return response\
+        # , print(f"Debug GKP Response: {response}")
 
 
 def kw_ideas(

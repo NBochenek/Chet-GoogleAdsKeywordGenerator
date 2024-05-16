@@ -1,5 +1,5 @@
 class Keyword:
-    def __init__(self, id, name, search_volume=None, total_monthly_clicks=None):
+    def __init__(self, id, name, search_volume=0, total_monthly_clicks=0):
         self.id = id
         self.name = name
         self.volume = search_volume

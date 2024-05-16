@@ -96,4 +96,4 @@ def scrape_page(url):
         return e
 
 if __name__ == '__main__':
-    scrape_page("https://athensindependent.com/lawsuit-over-seorj-inmate-death-to-move-forward-after-appellate-court-decision/")
+    scrape_page("https://socialsecurityreport.org/wep-and-gpo-to-repeal-or-not/")

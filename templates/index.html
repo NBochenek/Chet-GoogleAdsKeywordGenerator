@@ -299,7 +299,7 @@
             </div>
             <div class="nav-link">
               <div class="forward-arrow"></div>
-              <h2><a href="https://docs.google.com/spreadsheets/d/1V-lElMMqEa5Zn_ID2AtzHv15H9A5Eb9xILFzoH5mENg/edit#gid=0" target="_blank"> Feedback </a></h2>
+              <h2><a href="https://docs.google.com/spreadsheets/d/1D-C9nG3k2XY6t_-GT6a2_EpKuxnVMVyBI2WCiCupxUE" target="_blank"> Feedback </a></h2>
             </div>
             <div class="nav-link">
             <div class="forward-arrow"></div>
@@ -324,7 +324,6 @@
               {% endif %}
             {% endwith %}
         </div>
-        <!-- Conditional button for generating from selected keywords -->
         {% if iterative_generation %}
         <div class="gen-container">
             <h2 class="gen-title">Enter A Concise Keyword, Text Chunk, Or URL To Generate Ad Group Ideas</h2>
@@ -339,9 +338,17 @@
             <button class="btn gen-button" onclick="sendKeyword()">Generate</button>
         </div>
         {% endif %}
-
-        <!-- Conditional table column for selecting keywords -->
+        <!-- Described in the CSS above too. The keywords textarea and table are related and together take up with width of the page, so let's put them in a containing div together -->
         {% if keywords|length > 0 %}
+        <div class="feedback-container">
+        <h3 class="feedback-title">Was Chet helpful?</h3>
+        <div class="feedback-buttons">
+            <button class="btn feedback-button" onclick="submitFeedback('helpful', event)">Helpful</button>
+            <button class="btn feedback-button" onclick="submitFeedback('neutral', event)">Neutral</button>
+            <button class="btn feedback-button" onclick="submitFeedback('not_helpful', event)">Not Helpful</button>
+        </div>
+            </div>
+
         <div class="metric-container">
             <h3 class="keyword-title">Ad Group Ideas by Volume and Total Monthly Clicks</h3>
             <table class="metric-table" cellspacing="0">
@@ -365,7 +372,7 @@
                 {% endfor %}
             </table>
         </div>
-        {% endif %}
+    {% endif %}
         {% endblock %}
     </body>
 </html>

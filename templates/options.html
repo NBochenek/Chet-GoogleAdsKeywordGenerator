@@ -56,7 +56,7 @@
         <div class="form-group">
             <label for="urlIdeaEngine">URL Idea Engine</label>
             <select id="urlIdeaEngine" title="This engine determines how ad group ideas are generated when a URL is entered." name="urlIdeaEngine">
-                {% set engines = [('googlekeywordplanner', 'Google (Default)'), ('openai', 'OpenAI')] %}
+                {% set engines = [('openai', 'OpenAI (Default)'), ('googlekeywordplanner', 'Google')] %}
                 {% for code, name in engines %}
                     {% if code == current_url_idea_engine %}
                         <option value="{{ code }}" selected><b>{{ name }}</b></option>
@@ -73,8 +73,8 @@
         <label for="iterativeGeneration">Iterative Generation</label>
         <select id="iterativeGeneration" title="Enables or disables iterative generation for content." name="iterativeGeneration">
             <!-- Set the default option and allow the user to change it -->
-            <option value="false" selected>False (Default)</option>
-            <option value="true">True</option>
+            <option value="False" selected>False (Default)</option>
+            <option value="True">True</option>
         </select>
         </div>
         <button type="submit">Save Options</button>
