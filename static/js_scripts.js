@@ -170,6 +170,51 @@ function submitFeedback(type, event) {
     });
 }
 
+function sortTable(column) {
+  var table, rows, switching, i, x, y, shouldSwitch, direction, switchcount = 0;
+  table = document.querySelector(".metric-table");
+  switching = true;
+  direction = "asc"; // Set the sorting direction to ascending initially
+
+  while (switching) {
+    switching = false;
+    rows = table.rows;
+    for (i = 1; i < (rows.length - 1); i++) { // Skip the header row
+      shouldSwitch = false;
+      x = rows[i].getElementsByTagName("TD")[column];
+      y = rows[i + 1].getElementsByTagName("TD")[column];
+
+      // Check if the column should be parsed as integer
+      let xContent = (column === 1 || column === 2) ? parseInt(x.innerHTML, 10) : x.innerHTML.toLowerCase();
+      let yContent = (column === 1 || column === 2) ? parseInt(y.innerHTML, 10) : y.innerHTML.toLowerCase();
+
+      if (direction == "asc") {
+        if (xContent > yContent) {
+          shouldSwitch = true;
+          break;
+        }
+      } else if (direction == "desc") {
+        if (xContent < yContent) {
+          shouldSwitch = true;
+          break;
+        }
+      }
+    }
+    if (shouldSwitch) {
+      rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+      switching = true;
+      switchcount++;
+    } else {
+      if (switchcount == 0 && direction == "asc") {
+        direction = "desc";
+        switching = true;
+      }
+    }
+  }
+}
+
+
+
 
 
 

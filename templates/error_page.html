@@ -37,7 +37,9 @@
             <!-- Display Flashed Messages -->
             {% with messages = get_flashed_messages() %}
               {% if messages %}
-                <p class="text-red-600">{{ messages[0] }}</p>
+                {% for message in messages %}
+                  <p>{{ message }}</p>
+                {% endfor %}
               {% endif %}
             {% endwith %}
         </div>

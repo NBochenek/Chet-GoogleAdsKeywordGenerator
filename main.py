@@ -1,3 +1,4 @@
+import google.ads.googleads.errors
 import openai
 import re
 import time
@@ -113,6 +114,7 @@ def iterative_generation_function(input, language):
         print(e)
         time.sleep(5)
 
+
 def generate_tight_keyword_list(keyword):
     try:
         language = session.get('language', "english")
@@ -121,7 +123,7 @@ def generate_tight_keyword_list(keyword):
             {"role": "system", "content": "You are a helpful assistant that generates Google Ads keywords."},
             {"role": "user", "content": f"Here is an input keyword: {keywords_input}."
                                         f"Use this keyword to generate 20 new unique keywords based on the following principles:"
-                                        f" First, put the words in a different order as long as it doesn't change the meaning too much."
+                                        f"First, put the words in a different order as long as it doesn't change the meaning too much."
                                         "Second, use all fluent grammatical forms of essential words (e.g., compliance, comply, complying, complied)"
                                         "Third, substitute nouns and adjectives with synonyms where possible."
                                         
@@ -219,7 +221,14 @@ def remove_numbers(text_list):
         cleaned_list = [text.replace("'", "") for text in cleaned_list]
         cleaned_list = [text.replace('"', "") for text in cleaned_list]
         cleaned_list = [text.replace(":", "") for text in cleaned_list]
-        cleaned_list = [text.replace("-", "") for text in cleaned_list]
+
+        # Replace hyphens that are not between alphabetical characters
+        def replace_hyphens(text):
+            # This regex replaces hyphens that are not surrounded by alphabets
+            return re.sub(r'(?<![a-zA-Z])-|-(?![a-zA-Z])', '', text)
+
+        cleaned_list = [replace_hyphens(text) for text in cleaned_list]
+
         cleaned_list = [text.replace("(", "") for text in cleaned_list]
         cleaned_list = [text.replace(")", "") for text in cleaned_list]
         cleaned_list = [text.replace("  ", " ") for text in cleaned_list]
@@ -302,8 +311,11 @@ def kw_obj_constructor(string, list):
     except TypeError as e:
         print(e)
         flash(str(e))
+    except google.ads.googleads.errors.GoogleAdsException as e:
+        print(e)
+        flash(str(e))
     except Exception as e:
-        print(f"Error during Keyword Object creation. Error: {e}")
+        print(f"Error {type(e)}during Keyword Object creation. Error: {e}")
         flash(str(e))
         return kw_objs
 
@@ -379,6 +391,8 @@ def custom_keywords():
                 input_type = "chunk"
                 print("Debug: Input is chunk.")
                 custom_keywords = remove_numbers(generate_from_scrape(keyword))
+            elif keyword == "error_debug": #This is a dev-designed debug string designed to force an error,
+                raise Exception("Debug Error Message")
             else:
                 # Handle the case where the keyword is neither a URL nor a long text chunk
                 print("Short text or keyword found, handling differently.")
@@ -426,6 +440,7 @@ def custom_keywords():
 
             session['last_input'] = input_type # Saves the last input type to the session.
             return render_template("index.html", keywords=sorted_kw_objects, keyword_names=keyword_names, history=history, iterative_generation=iterative_generation)
+
         else:
             return render_template("index.html", error="Please enter a keyword.")
     except TypeError as e:
@@ -433,10 +448,11 @@ def custom_keywords():
         flash(str(e))
         return render_template("error_page.html")
     except AttributeError as e:
-        print(e)
+        app.logger.error(f"An error occurred: {e}")
         flash(str(e))
         return render_template("error_page.html")
     except Exception as e:
+        print(e)
         app.logger.error(f"An error occurred: {e}")
         flash(str(e))
         return render_template("error_page.html")
