@@ -141,6 +141,8 @@ def generate_tight_keyword_list(keyword):
 
         keywords = response["choices"][0]["message"]["content"].lower().lstrip().strip().split("\n")[:20]
 
+        print(f"Debug: {response, keywords}")
+
         return keywords  # Return the list of keywords instead of the formatted
 
     except openai.error.APIError as e:
@@ -151,6 +153,7 @@ def generate_tight_keyword_list(keyword):
 
 
 def generate_from_scrape(page_text):
+    summary = None #Init summary
     language = session.get('language', "english")
     #First summarize the text.
     try:
@@ -483,6 +486,8 @@ def generate_targeted_keywords():
 
         # Now join the items, they're safely quoted
         list_as_str = ", ".join(quoted_keywords)
+
+        # print(f"Debug: {list_as_str, cleaned_list}")
 
 
         kw_objects = kw_obj_constructor(list_as_str, cleaned_list)

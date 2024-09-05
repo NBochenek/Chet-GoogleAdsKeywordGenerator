@@ -316,7 +316,11 @@
             </div>
           </div>
         </div>
-        <div class="flashed_messages_containter">
+    <div class="dev_messages_container"
+         <h2 class="gen-title">You are using the Dev Version of Chet (1.1.12) released on 8/9/24. Please use the feedback buttons!</h2>
+    <a href="https://docs.google.com/document/d/1hhAQFEFj_wgnXLRTVYoS58tLdw91VJmS6FX7n5izfIg/edit" target="_blank">Changelog</a>
+    </div>
+        <div class="flashed_messages_container">
             <!-- Display Flashed Messages -->
             {% with messages = get_flashed_messages() %}
               {% if messages %}
@@ -353,7 +357,7 @@
             <h3 class="keyword-title">Ad Group Ideas by Volume and Total Monthly Clicks</h3>
             <table class="metric-table" cellspacing="0">
                 <tr>
-                    <th class="th-keyword sortable" onclick="sortTable(0)">Ad Group Idea</th>
+                    <th class="th-keyword sortable" onclick="sortTable(0)" title="Click these headers to sort them!">Ad Group Idea</th>
                     <th class="th-volume sortable" onclick="sortTable(1)" title="Populated by Spyfu or GKP, Whichever is Higher.">Estimated Monthly Volume</th>
                     <th class="th-clicks sortable" onclick="sortTable(2)" title="Populated By Spyfu.">Estimated Monthly Clicks</th>
                     {% if iterative_generation %}
