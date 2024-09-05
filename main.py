@@ -115,9 +115,8 @@ def iterative_generation_function(input, language):
         time.sleep(5)
 
 
-def generate_tight_keyword_list(keyword):
+def generate_tight_keyword_list(keyword, language):
     try:
-        language = session.get('language', "english")
         keywords_input = keyword
         messages = [
             {"role": "system", "content": "You are a helpful assistant that generates Google Ads keywords."},
@@ -128,7 +127,7 @@ def generate_tight_keyword_list(keyword):
                                         "Third, substitute nouns and adjectives with synonyms where possible."
                                         
                                         f"Finally, your responses must be in the {language} language."
-                                        "When you have a list of 20 keywords, insert a line break after every keyword and return as a numbered list."}
+                                        "When you have a list of 20 keywords, wrap them in the characters ** so they can be easily extracted."}
         ]
         response = openai.ChatCompletion.create(
             model=model,
@@ -139,9 +138,9 @@ def generate_tight_keyword_list(keyword):
             temperature=0.8,
         )
 
-        keywords = response["choices"][0]["message"]["content"].lower().lstrip().strip().split("\n")[:20]
+        keywords = response["choices"][0]["message"]["content"].lower().lstrip().strip()
 
-        print(f"Debug: {response, keywords}")
+        # print(f"Debug: {response, keywords}")
 
         return keywords  # Return the list of keywords instead of the formatted
 
@@ -150,6 +149,16 @@ def generate_tight_keyword_list(keyword):
     except openai.error.ServiceUnavailableError as e:
         print(e)
         time.sleep(5)
+
+
+def extract_keywords(text):
+    # Compile a regular expression pattern that matches text enclosed in **
+    pattern = re.compile(r'\*\*(.*?)\*\*')
+
+    # Find all occurrences of the pattern
+    matches = pattern.findall(text)
+
+    return matches
 
 
 def generate_from_scrape(page_text):
@@ -272,7 +281,7 @@ def update_keyword_objects(kw_objs, api_data, source):
                     kw.clicks = result.get('totalMonthlyClicks', 0)
                 elif source == "googlekeywordplanner":
                     #If the google metrics are worse, skip them.
-                    if result.keyword_metrics.avg_monthly_searches:
+                    if result.keyword_metrics.avg_monthly_searches is not None and kw.volume is not None:
                         if int(result.keyword_metrics.avg_monthly_searches) > kw.volume:
                             kw.volume = result.keyword_metrics.avg_monthly_searches
                     else:
@@ -291,12 +300,11 @@ def kw_obj_constructor(string, list):
         # Construct the initial object based on the list:
         for keyword in list:
             print(f"Debug: {keyword}")
-            if keyword == '' or len(keyword) > 30:
-                break
-            kw = Keyword(count, keyword)
-            if isinstance(kw, Keyword):
-                kw_objs.append(kw)
-                count += 1
+            if keyword:
+                kw = Keyword(count, keyword)
+                if isinstance(kw, Keyword):
+                    kw_objs.append(kw)
+                    count += 1
             else:
                 print("Not a Keyword object:", type(kw), kw)
 
@@ -313,6 +321,7 @@ def kw_obj_constructor(string, list):
 
     except TypeError as e:
         print(e)
+        print(f"Debug: This keyword caused the error: {keyword}")
         flash(str(e))
     except google.ads.googleads.errors.GoogleAdsException as e:
         print(e)
@@ -389,7 +398,7 @@ def custom_keywords():
                     custom_keywords = remove_numbers(scrape_suggest(keyword))
                 elif url_idea_engine == "googlekeywordplanner":
                     custom_keywords = kw_ideas(client, "9136996873", str(keyword))
-            elif len(keyword) > 20:  # This indicates a text chunk, so handle it differently
+            if len(keyword) > 20:  # This indicates a text chunk, so handle it differently
                 input_is_chunk = True
                 input_type = "chunk"
                 print("Debug: Input is chunk.")
@@ -467,22 +476,27 @@ def generate_targeted_keywords():
     print("Generating targeted keywords...")
     input_type = "targeted"
     session['last_input'] = input_type  # Saves the last input type to the session.
+    language = session.get('language', "english")  # Default to "English" if not set
     og_keyword = request.args.get('keyword', '')
     print(og_keyword)
 
     if og_keyword:
-        tight_kw = generate_tight_keyword_list(og_keyword)
-        cleaned_list = [og_keyword]
+        tight_kw = generate_tight_keyword_list(og_keyword, language)
+        tight_kw = remove_numbers(extract_keywords(tight_kw)) #Use RegEx to extract the keywords into a list. Then clean them of numbers if necessary
+        if og_keyword not in tight_kw:
+            tight_kw.append(og_keyword)
         history = session["history"]
-        for item in tight_kw:
-            try:
-                cleaned_item = item.split(" ", 1)[1]  # Split at the first space
-                cleaned_list.append(cleaned_item)
-            except IndexError:  # If split fails, keep the original item
-                cleaned_list.append(item)
+        # print(f"Debug: {tight_kw}")
+
+        # for item in tight_kw:
+        #     try:
+        #         cleaned_item = item.split(" ", 1)[1]  # Split at the first space
+        #         cleaned_list.append(cleaned_item)
+        #     except IndexError:  # If split fails, keep the original item
+        #         cleaned_list.append(item)
 
         # This ensures that entries with commas are treated as single entries
-        quoted_keywords = ['"{}"'.format(kw) for kw in cleaned_list]
+        quoted_keywords = ['"{}"'.format(kw) for kw in tight_kw]
 
         # Now join the items, they're safely quoted
         list_as_str = ", ".join(quoted_keywords)
@@ -490,13 +504,13 @@ def generate_targeted_keywords():
         # print(f"Debug: {list_as_str, cleaned_list}")
 
 
-        kw_objects = kw_obj_constructor(list_as_str, cleaned_list)
+        kw_objects = kw_obj_constructor(list_as_str, tight_kw)
         sorted_kw_objects = sorted(kw_objects, key=lambda x: x.volume if x.volume is not None else 0, reverse=True)
         keyword_names = [kw.name for kw in
                          sorted_kw_objects]  # Allows the keywords to be easily rendered into the text box.
         if len(keyword_names) < 20:
             no_data = []
-            for item in cleaned_list:
+            for item in tight_kw:
                 if item not in keyword_names:
                     no_data.append(item)
             # keyword_names = cleaned_list
@@ -610,4 +624,7 @@ def handle_keywords():
 if __name__ == '__main__':
     app.run(debug=True)
     # print(iterative_generation(["Museums Near Me", "Art Museums", "Museum Tours"], "english"))
+    # keywords = generate_tight_keyword_list("bullshit", "english")
+    # print(keywords)
+    # print(remove_numbers(extract_keywords(keywords)))
 
