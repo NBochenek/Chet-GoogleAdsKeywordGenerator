@@ -170,6 +170,7 @@ def generate_from_scrape(page_text):
         messages = [
             {"role": "system", "content": "You are a helpful assistant that creates useful summaries out of scraped web page text."},
             {"role": "user", "content": f"Summarize this text: {keywords_input}."
+                                        f"Do not return anything but the summary. Do not use the word 'summary' or 'article' in your response."
              }
         ]
         response = openai.ChatCompletion.create(
