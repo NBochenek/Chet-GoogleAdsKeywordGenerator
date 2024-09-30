@@ -1,6 +1,59 @@
 import validators
 from keys import client
 
+states = [
+  {'Alaska': 21132},
+  {'Alabama': 21133},
+  {'Arkansas': 21135},
+  {'Arizona': 21136},
+  {'California': 21137},
+  {'Colorado': 21138},
+  {'Connecticut': 21139},
+  {'District of Columbia': 21140},
+  {'Delaware': 21141},
+  {'Florida': 21142},
+  {'Georgia': 21143},
+  {'Hawaii': 21144},
+  {'Iowa': 21145},
+  {'Idaho': 21146},
+  {'Illinois': 21147},
+  {'Indiana': 21148},
+  {'Kansas': 21149},
+  {'Kentucky': 21150},
+  {'Louisiana': 21151},
+  {'Massachusetts': 21152},
+  {'Maryland': 21153},
+  {'Maine': 21154},
+  {'Michigan': 21155},
+  {'Minnesota': 21156},
+  {'Missouri': 21157},
+  {'Mississippi': 21158},
+  {'Montana': 21159},
+  {'North Carolina': 21160},
+  {'North Dakota': 21161},
+  {'Nebraska': 21162},
+  {'New Hampshire': 21163},
+  {'New Jersey': 21164},
+  {'New Mexico': 21165},
+  {'Nevada': 21166},
+  {'New York': 21167},
+  {'Ohio': 21168},
+  {'Oklahoma': 21169},
+  {'Oregon': 21170},
+  {'Pennsylvania': 21171},
+  {'Rhode Island': 21172},
+  {'South Carolina': 21173},
+  {'South Dakota': 21174},
+  {'Tennessee': 21175},
+  {'Texas': 21176},
+  {'Utah': 21177},
+  {'Virginia': 21178},
+  {'Vermont': 21179},
+  {'Washington': 21180},
+  {'Wisconsin': 21182},
+  {'West Virginia': 21183},
+  {'Wyoming': 21184}
+]
 
 
 def main(client, customer_id):
@@ -26,6 +79,7 @@ def generate_historical_metrics(client, customer_id, language, keyword_list):
     request.customer_id = customer_id
     request.keywords = keyword_list
     # Geo target constant 2840 is for USA.
+    # TODO For each area selected, append it to the constants array.
     request.geo_target_constants.append(
         googleads_service.geo_target_constant_path("2840")
     )
@@ -115,5 +169,6 @@ def kw_ideas(
 
 
 if __name__ == '__main__':
-    kw_ideas(client, "9136996873", "https://bgcpbc.org/events/"
-)
+    # kw_ideas(client, "9136996873", "https://bgcpbc.org/events/")
+    test = generate_historical_metrics(client, "9136996873", "english", ["cats", "dogs"])
+    print(test)

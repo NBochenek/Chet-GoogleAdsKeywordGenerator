@@ -77,6 +77,130 @@
             <option value="True">True</option>
         </select>
         </div>
+
+        <!-- New Enable Geo-Targeting option -->
+        <div class="form-group">
+            <label for="enableGeoTargeting">Enable Geo-Targeting?</label>
+            <select id="enableGeoTargeting" title="Enable or disable geo-targeting options. Default is the entire United States." name="enableGeoTargeting">
+                <option value="False" selected>No (Default)</option>
+                <option value="States">Yes - US States</option>
+                <option value="Countries">Yes - Countries</option>
+            </select>
+        </div>
+
+        <div class="geo-group">
+            <label class="main-label" for="geoTargeting">US State Selection</label>
+            <div id="geo-targeting-container">
+                {% set states = [
+                    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California',
+                    'Colorado', 'Connecticut', 'Delaware', 'Florida', 'Georgia',
+                    'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa',
+                    'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland',
+                    'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri',
+                    'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey',
+                    'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
+                    'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina',
+                    'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont',
+                    'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
+                ] %}
+                {% for state in states %}
+                    <input type="checkbox" name="states" value="{{ state }}" id="{{ state|replace(' ', '-') }}">
+                    <label for="{{ state|replace(' ', '-') }}">{{ state }}</label>
+                    {% if loop.index % 10 == 0 %}
+                        <br>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        <div class="geo-group">
+            <label class="main-label" for="countrySelection">Country Selection</label>
+            <div id="country-selection-container">
+                {% set countries = [
+                    'Afghanistan', 'Albania', 'Antarctica', 'Algeria', 'American Samoa',
+                    'Andorra', 'Angola', 'Antigua and Barbuda', 'Azerbaijan', 'Argentina',
+                    'Australia', 'Austria', 'The Bahamas', 'Bahrain', 'Bangladesh',
+                    'Armenia', 'Barbados', 'Belgium', 'Bhutan', 'Bolivia',
+                    'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Belize', 'Solomon Islands',
+                    'Brunei', 'Bulgaria', 'Myanmar (Burma)', 'Burundi', 'Belarus',
+                    'Cambodia', 'Cameroon', 'Canada', 'Cabo Verde', 'Central African Republic',
+                    'Sri Lanka', 'Chad', 'Chile', 'China', 'Christmas Island',
+                    'Cocos (Keeling) Islands', 'Colombia', 'Comoros', 'Republic of the Congo', 'Democratic Republic of the Congo',
+                    'Cook Islands', 'Costa Rica', 'Croatia', 'Cyprus', 'Czechia',
+                    'Benin', 'Denmark', 'Dominica', 'Dominican Republic', 'Ecuador',
+                    'El Salvador', 'Equatorial Guinea', 'Ethiopia', 'Eritrea', 'Estonia',
+                    'South Georgia and the South Sandwich Islands', 'Fiji', 'Finland', 'France', 'French Polynesia',
+                    'French Southern and Antarctic Lands', 'Djibouti', 'Gabon', 'Georgia', 'The Gambia',
+                    'Germany', 'Ghana', 'Kiribati', 'Greece', 'Grenada',
+                    'Guam', 'Guatemala', 'Guinea', 'Guyana', 'Haiti',
+                    'Heard Island and McDonald Islands', 'Vatican City', 'Honduras', 'Hungary', 'Iceland',
+                    'India', 'Indonesia', 'Iraq', 'Ireland', 'Israel',
+                    'Italy', 'Cote d\'Ivoire', 'Jamaica', 'Japan', 'Kazakhstan',
+                    'Jordan', 'Kenya', 'South Korea', 'Kuwait', 'Kyrgyzstan',
+                    'Laos', 'Lebanon', 'Lesotho', 'Latvia', 'Liberia',
+                    'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar',
+                    'Malawi', 'Malaysia', 'Maldives', 'Mali', 'Malta',
+                    'Mauritania', 'Mauritius', 'Mexico', 'Monaco', 'Mongolia',
+                    'Moldova', 'Montenegro', 'Morocco', 'Mozambique', 'Oman',
+                    'Namibia', 'Nauru', 'Nepal', 'Netherlands', 'Curacao',
+                    'Sint Maarten', 'Caribbean Netherlands', 'New Caledonia', 'Vanuatu', 'New Zealand',
+                    'Nicaragua', 'Niger', 'Nigeria', 'Niue', 'Norfolk Island',
+                    'Norway', 'Northern Mariana Islands', 'United States Minor Outlying Islands', 'Micronesia', 'Marshall Islands',
+                    'Palau', 'Pakistan', 'Panama', 'Papua New Guinea', 'Paraguay',
+                    'Peru', 'Philippines', 'Pitcairn Islands', 'Poland', 'Portugal',
+                    'Guinea-Bissau', 'Timor-Leste', 'Qatar', 'Romania', 'Russia',
+                    'Rwanda', 'Saint Barthelemy', 'Saint Helena, Ascension and Tristan da Cunha', 'Saint Kitts and Nevis', 'Saint Lucia',
+                    'Saint Martin', 'Saint Pierre and Miquelon', 'Saint Vincent and the Grenadines', 'San Marino', 'Sao Tome and Principe',
+                    'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone',
+                    'Singapore', 'Slovakia', 'Vietnam', 'Slovenia', 'Somalia',
+                    'South Africa', 'Zimbabwe', 'Spain', 'South Sudan', 'Sudan',
+                    'Suriname', 'Eswatini', 'Sweden', 'Switzerland', 'Tajikistan',
+                    'Thailand', 'Togo', 'Tokelau', 'Tonga', 'Trinidad and Tobago',
+                    'United Arab Emirates', 'Tunisia', 'Turkiye', 'Turkmenistan', 'Tuvalu',
+                    'Uganda', 'Ukraine', 'North Macedonia', 'Egypt', 'United Kingdom',
+                    'Guernsey', 'Jersey', 'Isle of Man', 'Tanzania', 'Burkina Faso',
+                    'Uruguay', 'Uzbekistan', 'Venezuela', 'Wallis and Futuna', 'Samoa',
+                    'Yemen', 'Zambia'
+                ] %}
+                {% for country in countries %}
+                    <input type="checkbox" name="countries" value="{{ country }}" id="{{ country|replace(' ', '-') }}">
+                    <label for="{{ country|replace(' ', '-') }}">{{ country }}</label>
+                    {% if loop.index % 10 == 0 %}
+                        <br>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
         <button type="submit">Save Options</button>
     </form>
+<!-- JavaScript Function for Enabling/Disabling Checkboxes -->
+<script>
+    function toggleGeoTargeting(targetingOption) {
+        let stateCheckboxes = document.querySelectorAll('#geo-targeting-container input[type="checkbox"]');
+        let countryCheckboxes = document.querySelectorAll('#country-selection-container input[type="checkbox"]');
+
+        // Disable all checkboxes initially
+        stateCheckboxes.forEach(checkbox => checkbox.disabled = true);
+        countryCheckboxes.forEach(checkbox => checkbox.disabled = true);
+
+        // Enable state checkboxes if "States" option is selected
+        if (targetingOption === "States") {
+            stateCheckboxes.forEach(checkbox => checkbox.disabled = false);
+        }
+
+        // Enable country checkboxes if "Countries" option is selected
+        if (targetingOption === "Countries") {
+            countryCheckboxes.forEach(checkbox => checkbox.disabled = false);
+        }
+    }
+
+    // Call the function when the dropdown changes
+    document.getElementById('enableGeoTargeting').addEventListener('change', function () {
+        toggleGeoTargeting(this.value);
+    });
+
+    // Optional: Call the function on page load to ensure proper initial state
+    document.addEventListener('DOMContentLoaded', function () {
+        toggleGeoTargeting(document.getElementById('enableGeoTargeting').value);
+    });
+</script>
 {% endblock %}
