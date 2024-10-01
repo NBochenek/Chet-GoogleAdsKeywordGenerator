@@ -81,11 +81,11 @@
         <!-- New Enable Geo-Targeting option -->
         <div class="form-group">
             <label for="enableGeoTargeting">Enable Geo-Targeting?</label>
-            <select id="enableGeoTargeting" title="Enable or disable geo-targeting options. Default is the entire United States." name="enableGeoTargeting">
-                <option value="False" selected>No (Default)</option>
-                <option value="States">Yes - US States</option>
-                <option value="Countries">Yes - Countries</option>
-            </select>
+            <select id="enableGeoTargeting" title="Enable or disable geo-targeting options. Default is the entire United States." name="enableGeoTargeting" onchange="toggleGeoTargeting(this.value);">
+            <option value="False" {% if current_geotargeting == "False" %}selected{% endif %}>No (Default)</option>
+            <option value="States" {% if current_geotargeting == "States" %}selected{% endif %}>Yes - US States</option>
+            <option value="Countries" {% if current_geotargeting == "Countries" %}selected{% endif %}>Yes - Countries</option>
+        </select>
         </div>
 
         <div class="geo-group">
@@ -104,7 +104,8 @@
                     'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
                 ] %}
                 {% for state in states %}
-                    <input type="checkbox" name="states" value="{{ state }}" id="{{ state|replace(' ', '-') }}">
+                    <input type="checkbox" name="states[]" value="{{ state }}" id="{{ state|replace(' ', '-') }}"
+                           {% if state in selected_states %}checked{% endif %}>
                     <label for="{{ state|replace(' ', '-') }}">{{ state }}</label>
                     {% if loop.index % 10 == 0 %}
                         <br>
@@ -162,13 +163,17 @@
                     'Yemen', 'Zambia'
                 ] %}
                 {% for country in countries %}
-                    <input type="checkbox" name="countries" value="{{ country }}" id="{{ country|replace(' ', '-') }}">
+                    <input type="checkbox" name="countries[]" value="{{ country }}" id="{{ country|replace(' ', '-') }}"
+                           {% if country in selected_countries %}checked{% endif %}>
                     <label for="{{ country|replace(' ', '-') }}">{{ country }}</label>
                     {% if loop.index % 10 == 0 %}
                         <br>
                     {% endif %}
                 {% endfor %}
             </div>
+        </div>
+        <div class="form-group">
+            <button type="button" onclick="clearGeoSelections()">Clear All Selections</button>
         </div>
         <button type="submit">Save Options</button>
     </form>
@@ -178,18 +183,22 @@
         let stateCheckboxes = document.querySelectorAll('#geo-targeting-container input[type="checkbox"]');
         let countryCheckboxes = document.querySelectorAll('#country-selection-container input[type="checkbox"]');
 
-        // Disable all checkboxes initially
-        stateCheckboxes.forEach(checkbox => checkbox.disabled = true);
-        countryCheckboxes.forEach(checkbox => checkbox.disabled = true);
+        // Hide all checkboxes initially
+        stateCheckboxes.forEach(checkbox => checkbox.style.display = 'none');
+        countryCheckboxes.forEach(checkbox => checkbox.style.display = 'none');
 
-        // Enable state checkboxes if "States" option is selected
+        // Show state checkboxes if "States" option is selected
         if (targetingOption === "States") {
-            stateCheckboxes.forEach(checkbox => checkbox.disabled = false);
+            stateCheckboxes.forEach(checkbox => {
+                checkbox.style.display = 'inline'; // or 'block', depending on your layout
+            });
         }
 
-        // Enable country checkboxes if "Countries" option is selected
+        // Show country checkboxes if "Countries" option is selected
         if (targetingOption === "Countries") {
-            countryCheckboxes.forEach(checkbox => checkbox.disabled = false);
+            countryCheckboxes.forEach(checkbox => {
+                checkbox.style.display = 'inline'; // or 'block', depending on your layout
+            });
         }
     }
 
@@ -198,9 +207,17 @@
         toggleGeoTargeting(this.value);
     });
 
-    // Optional: Call the function on page load to ensure proper initial state
     document.addEventListener('DOMContentLoaded', function () {
-        toggleGeoTargeting(document.getElementById('enableGeoTargeting').value);
+    const targetingOption = document.getElementById('enableGeoTargeting').value;
+    toggleGeoTargeting(targetingOption);
     });
+
+    function clearGeoSelections() {
+    let checkboxes = document.querySelectorAll('.geo-group input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+}
+
 </script>
 {% endblock %}

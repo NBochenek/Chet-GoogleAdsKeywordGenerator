@@ -40,6 +40,8 @@ def set_default_session_variables():
         session['url_idea_engine'] = "openai"  # Default to "openai", could be "openai"
     if 'iterative_generation' not in session:
         session['iterative_generation'] = False
+    if 'geotargeting' not in session:
+        session['geotargeting'] = False
 
 
 def get_variables():
@@ -49,7 +51,8 @@ def get_variables():
     idea_engine = session.get('idea_engine', "openai")  # Default to "openai"
     url_idea_engine = session.get('url_idea_engine', "openai")  # Default to "googlekeywordplanner"
     iterative_generation = session.get('iterative_generation', False)
-    return language, keyword_engine, idea_engine, url_idea_engine, iterative_generation
+    geotargeting = session.get('geotargeting', False)
+    return language, keyword_engine, idea_engine, url_idea_engine, iterative_generation, geotargeting
 
 
 def generate_broad_ad_group_ideas(keyword, language):
@@ -294,6 +297,7 @@ def kw_obj_constructor(string, list):
     kw_objs = []
     keyword_engine = session.get('keyword_engine', "both")
     language = session.get('language', "english")
+    geotargeting = session.get('geotargeting', False)
     count = 1
     kw_data = None
 
@@ -316,7 +320,7 @@ def kw_obj_constructor(string, list):
             kw_objs = update_keyword_objects(kw_objs, spyfu_kw_data, "spyfu")
 
         if keyword_engine in ["googlekeywordplanner", "both"]:
-            google_kw_data = generate_historical_metrics(client, "9136996873", language, list)
+            google_kw_data = generate_historical_metrics(client, "9136996873", language, list, geotargeting)
             # print(f"Debug Google Data: {google_kw_data}")
             kw_objs = update_keyword_objects(kw_objs, google_kw_data, "googlekeywordplanner")
 
@@ -333,7 +337,6 @@ def kw_obj_constructor(string, list):
         return kw_objs
 
     return kw_objs
-
 
 
 
@@ -370,11 +373,14 @@ def index():
     idea_engine = session.get('idea_engine', "openai")  # Default to "openai"
     url_idea_engine = session.get('url_idea_engine', "openai")  # Default to "googlekeywordplanner"
     iterative_generation = session.get('iterative_generation', False)
+    geotargeting = session.get('geotargeting', False)
+    selected_states = session.get('selected_states', [])
+    selected_countries = session.get('selected_countries', [])
     # Now you can use these local variables for your logic, calculations, or pass them to your template
     # For example, passing them to a template to display
-    print(f"Debug Settings: {language}, {keyword_engine}, {idea_engine}, {url_idea_engine}, {iterative_generation}")
+    print(f"Debug Settings: {language}, {keyword_engine}, {idea_engine}, {url_idea_engine}, {iterative_generation}, {geotargeting}, {selected_states}, {selected_countries}")
     return render_template('index.html', language=language, keyword_engine=keyword_engine, idea_engine=idea_engine,
-                           url_idea_engine=url_idea_engine, iterative_generation=iterative_generation)
+                           url_idea_engine=url_idea_engine, iterative_generation=iterative_generation, geotargeting=geotargeting)
 
 @app.route('/custom_keywords', methods=['GET'])
 def custom_keywords():
@@ -385,6 +391,7 @@ def custom_keywords():
     idea_engine = session.get('idea_engine', "openai")  # Default to "openai"
     url_idea_engine = session.get('url_idea_engine', "openai")  # Default to "googlekeywordplanner"
     iterative_generation = session.get('iterative_generation', False)
+    geotargeting = session.get('geotargeting', False)
     keyword = request.args.get('keyword', '')
     history = add_to_history(keyword)
     input_is_chunk = False
@@ -527,16 +534,19 @@ def generate_targeted_keywords():
 def options():
     if request.method == 'POST':
         # Update session variables from form inputs
-        session['language'] = request.form.get('language', session['language'])
-        session['keyword_engine'] = request.form.get('keywordEngine', session['keyword_engine'])
-        session['idea_engine'] = request.form.get('ideaEngine', session['idea_engine'])
-        session['url_idea_engine'] = request.form.get('urlIdeaEngine', session['url_idea_engine'])
-        session['iterative_generation'] = request.form.get('iterativeGeneration', session['iterative_generation'])
+        session['language'] = request.form.get('language', session.get('language', 'english'))
+        session['keyword_engine'] = request.form.get('keywordEngine', session.get('keyword_engine', 'both'))
+        session['idea_engine'] = request.form.get('ideaEngine', session.get('idea_engine', 'openai'))
+        session['url_idea_engine'] = request.form.get('urlIdeaEngine', session.get('url_idea_engine', 'openai'))
+        session['iterative_generation'] = request.form.get('iterativeGeneration', session.get('iterative_generation', False))
+        session['geotargeting'] = request.form.get('enableGeoTargeting', session.get('geotargeting', 'None'))
+
+        # Retrieve checkbox arrays for states and countries
+        session['selected_states'] = request.form.getlist('states[]')
+        session['selected_countries'] = request.form.getlist('countries[]')
 
         # Redirect to a new page or back to the form page after processing.
-        # You might want to redirect to a confirmation page or back to the form
-        # with a success message. For simplicity, we'll redirect back to the form.
-        return redirect(url_for('index'))
+        return redirect(url_for('index'))  # Redirect to the same options page for simplicity
 
     # If method is GET, just render the template.
     return render_template('options.html',
@@ -544,7 +554,14 @@ def options():
                            current_keyword_engine=session.get('keyword_engine', 'both'),
                            current_idea_engine=session.get('idea_engine', 'openai'),
                            current_url_idea_engine=session.get('url_idea_engine', 'openai'),
-                           current_iterative_generation=session.get('iterative_generation', False))
+                           current_iterative_generation=session.get('iterative_generation', False),
+                           current_geotargeting=session.get('geotargeting', False),
+                           selected_states=session.get('selected_states', []),
+                           selected_countries=session.get('selected_countries', [])
+                           )
+
+if __name__ == '__main__':
+    app.run(debug=True)
 
 
 @app.route('/submit_feedback', methods=['POST'])
