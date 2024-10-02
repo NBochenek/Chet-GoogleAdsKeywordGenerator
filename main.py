@@ -95,7 +95,8 @@ def iterative_generation_function(input, language):
             {"role": "user", "content": f"Based on this input, generate at least 20 unique Google Ads Ad Group Ideas:\n\n{keywords_input}"
                                         f"Each Ad Group Idea should be between 2 and 4 words. Do not concatenate words."
                                         f"Each Ad Group Idea should be relevant to the others."
-                                        "Insert a line break after every Ad Group and return as a list."
+                                        "Insert a line break after every Ad Group Idea and return as a numbered list."
+                                        "Do not return anything but the idea list."
                                         f"Your responses must be in the {language} language."}
         ]
         response = openai.ChatCompletion.create(
@@ -560,9 +561,6 @@ def options():
                            selected_countries=session.get('selected_countries', [])
                            )
 
-if __name__ == '__main__':
-    app.run(debug=True)
-
 
 @app.route('/submit_feedback', methods=['POST'])
 def submit_feedback():
@@ -602,6 +600,7 @@ def handle_keywords():
     #Generate the ideas
     try:
         custom_keywords = remove_numbers(iterative_generation_function(keywords, language))
+        print(f"Debug {custom_keywords}")
     except Exception as e:
         print(e)
         flash(str(e))
