@@ -13,6 +13,7 @@ def get_keyword_data(keywords):
     }
 
     response = requests.get(url, headers=headers, params=query_params)
+    # print(response.text)
 
     if response.status_code == 200:
         # search_volume = response.json()["results"][0]["searchVolume"]

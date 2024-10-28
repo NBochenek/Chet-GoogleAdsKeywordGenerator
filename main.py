@@ -3,9 +3,10 @@ import openai
 import re
 import time
 import validators
+import requests
 
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, make_response
-from keys import open_ai_key, client
+from keys import open_ai_key, client, secret_key
 from models import Keyword
 from spyFuAPI import get_keyword_data
 from scraper import scrape_page
@@ -22,7 +23,7 @@ logging_client = logging.Client()
 logger = logging_client.logger('feedback-logger')
 
 app = Flask(__name__)
-app.secret_key = "ghostfailurecurry"
+app.secret_key = secret_key
 
 openai.api_key = open_ai_key
 model = "gpt-4o" #directs what GPT model to use.
@@ -109,7 +110,7 @@ def iterative_generation_function(input, language):
         )
 
         keywords = response["choices"][0]["message"]["content"].lower().lstrip().strip().split("\n")[:20]
-        print(f"Debug: {response}")
+        # print(f"Debug: {response}")
         return keywords  # Return the list of keywords instead of the formatted
 
     except openai.error.APIError as e:
@@ -188,7 +189,7 @@ def generate_from_scrape(page_text):
 
         # print("Debug", response)
         summary = response["choices"][0]["message"]["content"].lower()
-        print(f"Debug Summary: {summary}")
+        # print(f"Debug Summary: {summary}")
         flash(f"Summary: {summary}")
 
     except openai.error.APIError as e:
@@ -267,9 +268,17 @@ def remove_numbers(text_list):
 
 
 def update_keyword_objects(kw_objs, api_data, source):
+    if api_data is None:
+        print(f"Debug: No API Data found in update_keyword_objects function.")
+        return kw_objs
     """Updates keyword objects with data from a given API source."""
     if source == "spyfu":
-        results = api_data.get("results", [])
+        try:
+            results = api_data.get("results", [])
+        except AttributeError as e:
+            print(f"Error getting SpyFu results: {e}")
+            print("Changing KW Engine source to GKP.")
+            source = "googlekeywordplanner"
     elif source == "googlekeywordplanner":
         results = api_data.results
     else:
@@ -302,10 +311,12 @@ def kw_obj_constructor(string, list):
     count = 1
     kw_data = None
 
+    # print(f"Debug kw_obj string: {string}")
+
     try:
         # Construct the initial object based on the list:
         for keyword in list:
-            print(f"Debug: {keyword}")
+            # print(f"Debug: {keyword}")
             if keyword:
                 kw = Keyword(count, keyword)
                 if isinstance(kw, Keyword):
@@ -332,6 +343,11 @@ def kw_obj_constructor(string, list):
     except google.ads.googleads.errors.GoogleAdsException as e:
         print(e)
         flash(str(e))
+    except requests.exceptions.JSONDecodeError as e:
+        print("Error getting SpyFu data. Their server may be down.")
+        flash("Error getting SpyFu data. Their server may be down. "
+              "Please change the keyword engine to Google Keyword Planner.")
+
     except Exception as e:
         print(f"Error {type(e)}during Keyword Object creation. Error: {e}")
         flash(str(e))
@@ -407,7 +423,7 @@ def custom_keywords():
                     custom_keywords = remove_numbers(scrape_suggest(keyword))
                 elif url_idea_engine == "googlekeywordplanner":
                     custom_keywords = kw_ideas(client, "9136996873", str(keyword))
-            if len(keyword) > 20:  # This indicates a text chunk, so handle it differently
+            if len(keyword) > 30:  # This indicates a text chunk, so handle it differently
                 input_is_chunk = True
                 input_type = "chunk"
                 print("Debug: Input is chunk.")
@@ -600,7 +616,7 @@ def handle_keywords():
     #Generate the ideas
     try:
         custom_keywords = remove_numbers(iterative_generation_function(keywords, language))
-        print(f"Debug {custom_keywords}")
+        # print(f"Debug {custom_keywords}")
     except Exception as e:
         print(e)
         flash(str(e))
