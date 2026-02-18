@@ -1,0 +1,1 @@
+This app is designed to help Nonprofit Megaphone's Client Services team create better and more keyword-relevant Google Ads. Detailed instructions and features can be found within the NPM Google Workspace: https://docs.google.com/document/d/1_YzoUSfNLoFMk1YMQWCkw0IEoA4vhxGo0dLu5d7wGNk/edit?usp=sharing
